@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Brain, CheckCircle, FileText } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BookOpen, Brain, CheckCircle, FileText, Upload, Settings, LogOut } from "lucide-react";
+import { OpenAIService } from "@/services/OpenAIService";
+import { ParsedContent } from "@/services/FileParserService";
+import FileUpload from "@/components/FileUpload";
+import ApiKeySetup from "@/components/ApiKeySetup";
+import { useToast } from "@/hooks/use-toast";
 
 interface EvaluationResult {
   keywords: string[];
@@ -21,48 +27,80 @@ interface EvaluationResult {
 
 const AssignmentEvaluator = () => {
   const [assignmentText, setAssignmentText] = useState("");
+  const [parsedFiles, setParsedFiles] = useState<ParsedContent[]>([]);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [result, setResult] = useState<EvaluationResult | null>(null);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [activeTab, setActiveTab] = useState("text");
+  const { toast } = useToast();
 
-  const evaluateAssignment = () => {
-    if (!assignmentText.trim()) return;
+  useEffect(() => {
+    const apiKey = OpenAIService.getApiKey();
+    setHasApiKey(!!apiKey);
+  }, []);
+
+  const evaluateAssignment = async () => {
+    let textToEvaluate = "";
+    
+    if (activeTab === "text" && assignmentText.trim()) {
+      textToEvaluate = assignmentText;
+    } else if (activeTab === "files" && parsedFiles.length > 0) {
+      textToEvaluate = parsedFiles.map(file => 
+        `File: ${file.filename}\n${file.text}`
+      ).join('\n\n---\n\n');
+    }
+    
+    if (!textToEvaluate.trim()) {
+      toast({
+        title: "No Content",
+        description: "Please provide assignment text or upload files to evaluate.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsEvaluating(true);
+    setResult(null);
     
-    // Simulate AI evaluation with realistic delay
-    setTimeout(() => {
-      // Mock evaluation result
-      const mockResult: EvaluationResult = {
-        keywords: [
-          "machine learning",
-          "neural networks", 
-          "data preprocessing",
-          "feature engineering",
-          "model training",
-          "cross-validation",
-          "overfitting",
-          "regularization",
-          "gradient descent",
-          "backpropagation",
-          "supervised learning",
-          "classification",
-          "accuracy metrics"
-        ],
-        relevance_score: 8.5,
-        rubric: {
-          content_relevance: 4,
-          completeness: 3,
-          clarity_language: 4,
-          originality: 3
-        },
-        total_score: 14,
-        feedback: "The assignment demonstrates a solid understanding of machine learning concepts with clear explanations. However, it could benefit from more detailed examples and deeper analysis of model evaluation techniques."
-      };
+    try {
+      const evaluation = await OpenAIService.evaluateAssignment(textToEvaluate);
+      setResult(evaluation);
       
-      setResult(mockResult);
+      toast({
+        title: "Evaluation Complete",
+        description: "Assignment has been successfully evaluated by AI.",
+      });
+    } catch (error) {
+      console.error('Evaluation error:', error);
+      toast({
+        title: "Evaluation Failed",
+        description: error instanceof Error ? error.message : "Failed to evaluate assignment",
+        variant: "destructive",
+      });
+    } finally {
       setIsEvaluating(false);
-    }, 2000);
+    }
   };
+
+  const handleApiKeySet = () => {
+    setHasApiKey(true);
+  };
+
+  const handleLogout = () => {
+    OpenAIService.removeApiKey();
+    setHasApiKey(false);
+    setResult(null);
+    setAssignmentText("");
+    setParsedFiles([]);
+    toast({
+      title: "Logged Out",
+      description: "API key removed successfully.",
+    });
+  };
+
+  if (!hasApiKey) {
+    return <ApiKeySetup onApiKeySet={handleApiKeySet} />;
+  }
 
   const getRubricColor = (score: number) => {
     if (score >= 4) return "bg-success";
@@ -83,58 +121,101 @@ const AssignmentEvaluator = () => {
       <div className="container max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground px-4 py-2 rounded-full mb-4 shadow-glow">
-            <Brain className="w-5 h-5" />
-            <span className="font-semibold">AI-Powered</span>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex-1"></div>
+            <div className="inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground px-4 py-2 rounded-full shadow-glow">
+              <Brain className="w-5 h-5" />
+              <span className="font-semibold">AI-Powered</span>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Reset API Key
+              </Button>
+            </div>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
             Grade Sanchalaak
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Advanced AI assignment evaluator that provides comprehensive analysis with keyword extraction, 
-            semantic relevance scoring, and detailed rubric-based feedback.
+            Advanced AI assignment evaluator supporting multiple file formats with comprehensive analysis, 
+            keyword extraction, semantic relevance scoring, and detailed rubric-based feedback.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Input Section */}
-          <Card className="shadow-elegant hover:shadow-glow transition-all duration-300 animate-scale-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Assignment Input
-              </CardTitle>
-              <CardDescription>
-                Paste the student assignment text below for comprehensive evaluation
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                placeholder="Paste the assignment text here for evaluation..."
-                value={assignmentText}
-                onChange={(e) => setAssignmentText(e.target.value)}
-                className="min-h-[300px] resize-none border-2 focus:border-primary transition-colors"
-              />
-              <Button
-                onClick={evaluateAssignment}
-                disabled={!assignmentText.trim() || isEvaluating}
-                className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300"
-                size="lg"
-              >
-                {isEvaluating ? (
-                  <>
-                    <Brain className="w-4 h-4 mr-2 animate-spin" />
-                    Evaluating Assignment...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Evaluate Assignment
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card className="shadow-elegant hover:shadow-glow transition-all duration-300 animate-scale-in">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-primary" />
+                  Assignment Input
+                </CardTitle>
+                <CardDescription>
+                  Enter text directly or upload assignment files for AI evaluation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="text" className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Text Input
+                    </TabsTrigger>
+                    <TabsTrigger value="files" className="flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      File Upload
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="text" className="space-y-4">
+                    <Textarea
+                      placeholder="Paste the assignment text here for evaluation..."
+                      value={assignmentText}
+                      onChange={(e) => setAssignmentText(e.target.value)}
+                      className="min-h-[300px] resize-none border-2 focus:border-primary transition-colors"
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="files">
+                    <FileUpload 
+                      onFilesParsed={setParsedFiles}
+                      disabled={isEvaluating}
+                    />
+                  </TabsContent>
+                </Tabs>
+                
+                <Button
+                  onClick={evaluateAssignment}
+                  disabled={
+                    isEvaluating || 
+                    (activeTab === "text" && !assignmentText.trim()) ||
+                    (activeTab === "files" && parsedFiles.length === 0)
+                  }
+                  className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 mt-4"
+                  size="lg"
+                >
+                  {isEvaluating ? (
+                    <>
+                      <Brain className="w-4 h-4 mr-2 animate-spin" />
+                      AI is Evaluating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Evaluate with AI
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Results Section */}
           <div className="space-y-6">
@@ -145,7 +226,7 @@ const AssignmentEvaluator = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Brain className="w-5 h-5 text-primary" />
-                      Overall Evaluation
+                      AI Evaluation Results
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -233,9 +314,12 @@ const AssignmentEvaluator = () => {
               <Card className="shadow-elegant">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                   <Brain className="w-12 h-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Ready to Evaluate</h3>
+                  <h3 className="text-lg font-semibold mb-2">Ready for AI Evaluation</h3>
                   <p className="text-muted-foreground">
-                    Enter an assignment text and click "Evaluate Assignment" to see the AI analysis
+                    {activeTab === "text" 
+                      ? "Enter assignment text and click 'Evaluate with AI'"
+                      : "Upload assignment files and click 'Evaluate with AI'"
+                    }
                   </p>
                 </CardContent>
               </Card>
