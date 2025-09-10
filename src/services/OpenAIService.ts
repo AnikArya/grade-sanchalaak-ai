@@ -82,7 +82,7 @@ Return ONLY a valid JSON array of exactly 50 keywords:
           model: 'gpt-5-2025-08-07',
           messages: messages,
           temperature: 0.2,
-          max_tokens: 1000,
+          max_completion_tokens: 1000,
           response_format: { type: 'json_object' }
         }),
       });
@@ -172,7 +172,7 @@ Return ONLY a valid JSON response:
           model: 'gpt-5-2025-08-07',
           messages: messages,
           temperature: 0.3,
-          max_tokens: 1500,
+          max_completion_tokens: 1500,
           response_format: { type: 'json_object' }
         }),
       });
