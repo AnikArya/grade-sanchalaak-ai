@@ -63,7 +63,8 @@ const AssignmentEvaluator = () => {
     setResult(null);
     
     try {
-      const evaluation = await OpenAIService.evaluateAssignment(textToEvaluate);
+      // For single assignment evaluation, we'll use empty keywords array
+      const evaluation = await OpenAIService.evaluateAssignment(textToEvaluate, []);
       setResult(evaluation);
       
       toast({
