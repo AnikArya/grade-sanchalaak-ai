@@ -248,16 +248,69 @@ const GradeSanchalaak = () => {
                   Assignment Problem Statement
                 </CardTitle>
                 <CardDescription>
-                  Enter the assignment problem to extract 50 relevant keywords for evaluation
+                  Enter or upload the assignment problem to extract 50 relevant keywords for evaluation
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="Enter the complete assignment problem statement here. The AI will extract 50 domain-specific keywords that will be used to evaluate student solutions..."
-                  value={assignmentProblem}
-                  onChange={(e) => setAssignmentProblem(e.target.value)}
-                  className="min-h-[200px] resize-none border-2 focus:border-primary transition-colors"
-                />
+                <Tabs defaultValue="text" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="text" className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Type Problem
+                    </TabsTrigger>
+                    <TabsTrigger value="upload" className="flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      Upload Problem
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="text" className="space-y-4">
+                    <Textarea
+                      placeholder="Enter the complete assignment problem statement here. The AI will extract 50 domain-specific keywords that will be used to evaluate student solutions..."
+                      value={assignmentProblem}
+                      onChange={(e) => setAssignmentProblem(e.target.value)}
+                      className="min-h-[200px] resize-none border-2 focus:border-primary transition-colors"
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="upload" className="space-y-4">
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.txt"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const { FileParserService } = await import('@/services/FileParserService');
+                              const parsed = await FileParserService.parseFile(file);
+                              setAssignmentProblem(parsed.text);
+                            } catch (error) {
+                              console.error('Error parsing file:', error);
+                            }
+                          }
+                        }}
+                        className="hidden"
+                        id="problem-file-input"
+                      />
+                      <label htmlFor="problem-file-input" className="cursor-pointer">
+                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Click to upload assignment problem file
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Supports PDF, Word, and TXT files
+                        </p>
+                      </label>
+                    </div>
+                    {assignmentProblem && (
+                      <div className="bg-secondary/50 p-3 rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-2">Extracted text preview:</p>
+                        <p className="text-sm truncate">{assignmentProblem.substring(0, 100)}...</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
                 
                 <Button
                   onClick={extractKeywords}
