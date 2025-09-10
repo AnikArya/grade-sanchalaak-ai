@@ -41,7 +41,7 @@ export class OpenAIService {
     }
   }
 
-  static async evaluateAssignment(assignmentText: string): Promise<any> {
+  static async extractKeywords(assignmentProblem: string): Promise<string[]> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
       throw new Error('OpenAI API key not found');
@@ -50,38 +50,24 @@ export class OpenAIService {
     const messages: OpenAIMessage[] = [
       {
         role: 'system',
-        content: `You are an AI-powered assignment evaluator named "Grade Sanchalaak". 
-Your job is to analyze student assignments end-to-end and return a structured evaluation. 
-Follow these steps carefully:
+        content: `You are a keyword extraction specialist. Your job is to extract 50 highly relevant, domain-specific keywords from assignment problems that will be used to evaluate student solutions.
 
-1. **Keyword Extraction**: From the given assignment text, extract 10–15 domain-specific, contextually relevant keywords (avoid generic terms).  
-2. **Semantic Relevance**: Check if the assignment meaningfully covers these keywords, even if exact words are missing. Use semantic similarity, not just keyword matching. Give a relevance score (0–10).  
-3. **Rubric-Based Grading**: Evaluate the assignment on these criteria (each 0–5):  
-   - Content Relevance  
-   - Completeness  
-   - Clarity & Language  
-   - Originality  
-4. **Feedback**: Provide constructive feedback in 2–3 sentences, highlighting strengths and suggesting improvements.  
+Extract keywords that are:
+- Technical terms, concepts, methodologies
+- Subject-specific terminology
+- Key processes, principles, or theories
+- Important tools, frameworks, or models
+- Critical skills or competencies
+- Domain-specific jargon and terminology
 
-Return ONLY a valid JSON response in this exact format:
-{
-  "keywords": ["keyword1", "keyword2", ...],
-  "relevance_score": X,
-  "rubric": {
-    "content_relevance": A,
-    "completeness": B,
-    "clarity_language": C,
-    "originality": D
-  },
-  "total_score": T,
-  "feedback": "..."
-}
+Avoid generic terms like: "important", "good", "analysis", "conclusion", "introduction"
 
-Where X is 0-10, A,B,C,D are 0-5, and T is the sum of A+B+C+D.`
+Return ONLY a valid JSON array of exactly 50 keywords:
+["keyword1", "keyword2", ..., "keyword50"]`
       },
       {
         role: 'user',
-        content: `Please evaluate this assignment:\n\n${assignmentText}`
+        content: `Extract 50 relevant keywords from this assignment problem:\n\n${assignmentProblem}`
       }
     ];
 
@@ -93,7 +79,97 @@ Where X is 0-10, A,B,C,D are 0-5, and T is the sum of A+B+C+D.`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-5-2025-08-07',
+          messages: messages,
+          temperature: 0.2,
+          max_tokens: 1000,
+          response_format: { type: 'json_object' }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Failed to extract keywords');
+      }
+
+      const data: OpenAIResponse = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No response content received');
+      }
+
+      const result = JSON.parse(content);
+      return Array.isArray(result) ? result : result.keywords || [];
+    } catch (error) {
+      console.error('Error extracting keywords:', error);
+      throw error;
+    }
+  }
+
+  static async evaluateAssignment(assignmentText: string, referenceKeywords: string[]): Promise<any> {
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      throw new Error('OpenAI API key not found');
+    }
+
+    // Check if assignment only contains keywords (warning detection)
+    const wordCount = assignmentText.split(/\s+/).length;
+    const keywordMatches = referenceKeywords.filter(keyword => 
+      assignmentText.toLowerCase().includes(keyword.toLowerCase())
+    ).length;
+    
+    const isKeywordOnly = wordCount < 100 && (keywordMatches / wordCount) > 0.3;
+
+    const messages: OpenAIMessage[] = [
+      {
+        role: 'system',
+        content: `You are an AI-powered assignment evaluator named "Grade Sanchalaak". 
+Evaluate student assignments based on provided reference keywords and content quality.
+
+Reference Keywords: ${referenceKeywords.join(', ')}
+
+Evaluation Criteria:
+1. **Keyword Coverage**: How many reference keywords are meaningfully addressed (0-10)
+2. **Content Quality**: Depth, understanding, and proper explanation (0-5)
+3. **Completeness**: How thoroughly the assignment addresses the topic (0-5)  
+4. **Clarity & Language**: Writing quality and communication (0-5)
+5. **Originality**: Original thinking and insights beyond keywords (0-5)
+
+${isKeywordOnly ? 'WARNING: This assignment appears to only contain keywords without proper explanation.' : ''}
+
+Return ONLY a valid JSON response:
+{
+  "keyword_coverage": X,
+  "matched_keywords": ["matched1", "matched2", ...],
+  "missing_keywords": ["missing1", "missing2", ...],
+  "rubric": {
+    "content_quality": A,
+    "completeness": B,
+    "clarity_language": C,
+    "originality": D
+  },
+  "total_score": T,
+  "is_keyword_only": ${isKeywordOnly},
+  "feedback": "...",
+  "warning": "${isKeywordOnly ? 'Assignment appears to contain only keywords without proper explanations.' : ''}"
+}`
+      },
+      {
+        role: 'user',
+        content: `Evaluate this assignment:\n\n${assignmentText}`
+      }
+    ];
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-5-2025-08-07',
           messages: messages,
           temperature: 0.3,
           max_tokens: 1500,

@@ -1,7 +1,7 @@
-import AssignmentEvaluator from "@/components/AssignmentEvaluator";
+import GradeSanchalaak from "@/components/GradeSanchalaak";
 
 const Index = () => {
-  return <AssignmentEvaluator />;
+  return <GradeSanchalaak />;
 };
 
 export default Index;
