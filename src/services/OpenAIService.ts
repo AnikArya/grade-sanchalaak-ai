@@ -88,18 +88,31 @@ Return ONLY a valid JSON array of exactly 50 keywords:
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('OpenAI API Error:', errorData);
         throw new Error(errorData.error?.message || 'Failed to extract keywords');
       }
 
       const data: OpenAIResponse = await response.json();
+      console.log('OpenAI Response:', data);
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No choices in OpenAI response');
+      }
+      
       const content = data.choices[0]?.message?.content;
       
       if (!content) {
-        throw new Error('No response content received');
+        console.error('Empty content in response:', data);
+        throw new Error('No response content received from OpenAI');
       }
 
-      const result = JSON.parse(content);
-      return Array.isArray(result) ? result : result.keywords || [];
+      try {
+        const result = JSON.parse(content);
+        return Array.isArray(result) ? result : result.keywords || [];
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError, 'Content:', content);
+        throw new Error('Failed to parse OpenAI response');
+      }
     } catch (error) {
       console.error('Error extracting keywords:', error);
       throw error;
@@ -177,17 +190,30 @@ Return ONLY a valid JSON response:
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('OpenAI API Error:', errorData);
         throw new Error(errorData.error?.message || 'Failed to evaluate assignment');
       }
 
       const data: OpenAIResponse = await response.json();
+      console.log('OpenAI Evaluation Response:', data);
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No choices in OpenAI response');
+      }
+      
       const content = data.choices[0]?.message?.content;
       
       if (!content) {
-        throw new Error('No response content received');
+        console.error('Empty content in response:', data);
+        throw new Error('No response content received from OpenAI');
       }
 
-      return JSON.parse(content);
+      try {
+        return JSON.parse(content);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError, 'Content:', content);
+        throw new Error('Failed to parse OpenAI response');
+      }
     } catch (error) {
       console.error('Error evaluating assignment:', error);
       throw error;
