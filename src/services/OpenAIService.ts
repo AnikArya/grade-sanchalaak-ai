@@ -170,10 +170,10 @@ Evaluate student assignments based on provided reference keywords and content qu
 
 Reference Keywords: ${referenceKeywords.join(', ')}
 
-Evaluation Criteria:
-1. **Keyword Coverage**: How many reference keywords are meaningfully addressed (0-10)
-2. **Content Quality**: Depth, understanding, and proper explanation (0-5)
-3. **Completeness**: How thoroughly the assignment addresses the topic (0-5)  
+Evaluation Criteria (Total: 50 marks):
+1. **Keyword Coverage**: How many reference keywords are meaningfully addressed (0-20)
+2. **Content Quality**: Depth, understanding, and proper explanation (0-10)
+3. **Completeness**: How thoroughly the assignment addresses the topic (0-10)  
 4. **Clarity & Language**: Writing quality and communication (0-5)
 5. **Originality**: Original thinking and insights beyond keywords (0-5)
 
