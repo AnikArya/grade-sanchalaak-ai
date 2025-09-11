@@ -72,28 +72,57 @@ Return ONLY a valid JSON array of exactly 50 keywords:
     ];
 
     try {
+      console.log('Making OpenAI request with:', {
+        model: 'gpt-4.1-2025-04-14',
+        messageCount: messages.length,
+        assignmentLength: assignmentProblem.length
+      });
+
+      const requestBody = {
+        model: 'gpt-4.1-2025-04-14',
+        messages: messages,
+        max_completion_tokens: 1000,
+        response_format: { type: 'json_object' }
+      };
+
+      console.log('Request body:', requestBody);
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'gpt-5-2025-08-07',
-          messages: messages,
-          max_completion_tokens: 1000,
-          response_format: { type: 'json_object' }
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('OpenAI API Error:', errorData);
+        const errorText = await response.text();
+        console.error('OpenAI API Error Response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: { message: errorText } };
+        }
         throw new Error(errorData.error?.message || 'Failed to extract keywords');
       }
 
-      const data: OpenAIResponse = await response.json();
-      console.log('OpenAI Response:', data);
+      const responseText = await response.text();
+      console.log('Raw response text:', responseText);
+      
+      let data: OpenAIResponse;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        throw new Error('Invalid JSON response from OpenAI');
+      }
+      
+      console.log('Parsed OpenAI Response:', data);
       
       if (!data.choices || data.choices.length === 0) {
         throw new Error('No choices in OpenAI response');
@@ -181,7 +210,7 @@ Return ONLY a valid JSON response:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-2025-08-07',
+          model: 'gpt-4.1-2025-04-14',
           messages: messages,
           max_completion_tokens: 1500,
           response_format: { type: 'json_object' }
