@@ -137,29 +137,132 @@ const GradeSanchalaak = () => {
     setBatchResults([]);
   };
 
-  const exportReport = () => {
-    const reportData = {
-      assignmentProblem,
-      extractedKeywords,
-      totalFiles: uploadedFiles.length,
-      results: batchResults,
-      summary: {
-        averageScore: batchResults.length > 0 
-          ? batchResults.reduce((sum, r) => sum + r.evaluation.total_score, 0) / batchResults.length 
-          : 0,
-        warningCount: batchResults.filter(r => r.evaluation.is_keyword_only).length
-      }
-    };
+  const exportReport = async () => {
+    try {
+      const jsPDF = (await import('jspdf')).default;
+      const autoTable = (await import('jspdf-autotable')).default;
+      
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.text('Grade Sanchalaak - Assignment Evaluation Report', 20, 20);
+      
+      // Summary
+      doc.setFontSize(12);
+      const averageScore = batchResults.length > 0 
+        ? batchResults.reduce((sum, r) => sum + r.evaluation.total_score, 0) / batchResults.length 
+        : 0;
+      const warningCount = batchResults.filter(r => r.evaluation.is_keyword_only).length;
+      
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
+      doc.text(`Total Assignments: ${batchResults.length}`, 20, 45);
+      doc.text(`Average Score: ${averageScore.toFixed(1)}/50`, 20, 55);
+      doc.text(`Keyword-Only Warnings: ${warningCount}`, 20, 65);
+      
+      // Extracted Keywords
+      doc.setFontSize(14);
+      doc.text('Extracted Keywords:', 20, 85);
+      doc.setFontSize(10);
+      const keywordText = extractedKeywords.join(', ');
+      const splitKeywords = doc.splitTextToSize(keywordText, 170);
+      doc.text(splitKeywords, 20, 95);
+      
+      // Results Table
+      const tableData = batchResults.map(result => [
+        result.filename,
+        `${result.evaluation.total_score}/50`,
+        `${result.evaluation.keyword_coverage}/20`,
+        `${result.evaluation.matched_keywords.length}`,
+        result.evaluation.is_keyword_only ? 'Yes' : 'No'
+      ]);
+      
+      autoTable(doc, {
+        head: [['Filename', 'Total Score', 'Keyword Coverage', 'Keywords Matched', 'Warning']],
+        body: tableData,
+        startY: 120,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] }
+      });
+      
+      doc.save(`grade_sanchalaak_report_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast({
+        title: "Report Exported",
+        description: "PDF report downloaded successfully.",
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to generate PDF report.",
+        variant: "destructive",
+      });
+    }
+  };
 
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `grade_sanchalaak_report_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const exportExcelReport = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      
+      const averageScore = batchResults.length > 0 
+        ? batchResults.reduce((sum, r) => sum + r.evaluation.total_score, 0) / batchResults.length 
+        : 0;
+      const warningCount = batchResults.filter(r => r.evaluation.is_keyword_only).length;
+      
+      // Summary Sheet
+      const summaryData = [
+        ['Grade Sanchalaak - Assignment Evaluation Report'],
+        ['Generated on:', new Date().toLocaleDateString()],
+        ['Total Assignments:', batchResults.length],
+        ['Average Score:', `${averageScore.toFixed(1)}/50`],
+        ['Keyword-Only Warnings:', warningCount],
+        [],
+        ['Extracted Keywords:'],
+        [extractedKeywords.join(', ')]
+      ];
+      
+      // Results Sheet
+      const resultsData = [
+        ['Filename', 'Total Score', 'Keyword Coverage', 'Content Quality', 'Completeness', 'Clarity & Language', 'Originality', 'Keywords Matched', 'Warning', 'Feedback']
+      ];
+      
+      batchResults.forEach(result => {
+        resultsData.push([
+          result.filename,
+          `${result.evaluation.total_score}/50`,
+          `${result.evaluation.keyword_coverage}/20`,
+          `${result.evaluation.rubric.content_quality}/10`,
+          `${result.evaluation.rubric.completeness}/10`,
+          `${result.evaluation.rubric.clarity_language}/5`,
+          `${result.evaluation.rubric.originality}/5`,
+          result.evaluation.matched_keywords.length,
+          result.evaluation.is_keyword_only ? 'Yes' : 'No',
+          result.evaluation.feedback
+        ]);
+      });
+      
+      const wb = XLSX.utils.book_new();
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+      const resultsWs = XLSX.utils.aoa_to_sheet(resultsData);
+      
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+      XLSX.utils.book_append_sheet(wb, resultsWs, 'Results');
+      
+      XLSX.writeFile(wb, `grade_sanchalaak_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast({
+        title: "Report Exported",
+        description: "Excel report downloaded successfully.",
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to generate Excel report.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!hasApiKey) {
@@ -185,7 +288,7 @@ const GradeSanchalaak = () => {
                 className="gap-2"
               >
                 <LogOut className="w-4 h-4" />
-                Reset API Key
+                Logout
               </Button>
             </div>
           </div>
@@ -400,7 +503,9 @@ const GradeSanchalaak = () => {
             {batchResults.length > 0 ? (
               <BatchEvaluationResults 
                 results={batchResults}
+                extractedKeywords={extractedKeywords}
                 onExportReport={exportReport}
+                onExportExcel={exportExcelReport}
               />
             ) : (
               <Card className="shadow-elegant">

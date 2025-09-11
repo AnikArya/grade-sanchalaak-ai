@@ -28,10 +28,12 @@ interface BatchResult {
 
 interface BatchEvaluationResultsProps {
   results: BatchResult[];
+  extractedKeywords: string[];
   onExportReport: () => void;
+  onExportExcel: () => void;
 }
 
-const BatchEvaluationResults = ({ results, onExportReport }: BatchEvaluationResultsProps) => {
+const BatchEvaluationResults = ({ results, extractedKeywords, onExportReport, onExportExcel }: BatchEvaluationResultsProps) => {
   const [selectedResult, setSelectedResult] = useState<BatchResult | null>(null);
 
   const warningResults = results.filter(r => r.evaluation.is_keyword_only);
@@ -63,14 +65,24 @@ const BatchEvaluationResults = ({ results, onExportReport }: BatchEvaluationResu
               <BarChart3 className="w-5 h-5 text-primary" />
               Batch Evaluation Summary
             </CardTitle>
-            <Button 
-              variant="outline" 
-              onClick={onExportReport}
-              className="gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export Report
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={onExportReport}
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export PDF
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={onExportExcel}
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export Excel
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -83,7 +95,7 @@ const BatchEvaluationResults = ({ results, onExportReport }: BatchEvaluationResu
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                {averageScore.toFixed(1)}/20
+                {averageScore.toFixed(1)}/50
               </div>
               <div className="text-sm text-muted-foreground">Average Score</div>
             </div>
@@ -147,7 +159,7 @@ const BatchEvaluationResults = ({ results, onExportReport }: BatchEvaluationResu
                           )}
                         </div>
                         <Badge variant="secondary">
-                          {result.evaluation.total_score}/20
+                          {result.evaluation.total_score}/50
                         </Badge>
                       </div>
                       
@@ -161,13 +173,13 @@ const BatchEvaluationResults = ({ results, onExportReport }: BatchEvaluationResu
                         <div>
                           <span className="text-muted-foreground">Quality Score:</span>
                           <span className="ml-1 font-medium">
-                            {result.evaluation.keyword_coverage}/10
+                            {result.evaluation.keyword_coverage}/20
                           </span>
                         </div>
                       </div>
                       
                       <Progress 
-                        value={(result.evaluation.total_score / 20) * 100} 
+                        value={(result.evaluation.total_score / 50) * 100} 
                         className="h-2 mt-2"
                       />
                     </div>
@@ -203,15 +215,27 @@ const BatchEvaluationResults = ({ results, onExportReport }: BatchEvaluationResu
                   {/* Score Overview */}
                   <div className="text-center">
                     <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-                      {selectedResult.evaluation.total_score}/20
+                      {selectedResult.evaluation.total_score}/50
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Keyword Coverage: {selectedResult.evaluation.keyword_coverage}/10
+                      Keyword Coverage: {selectedResult.evaluation.keyword_coverage}/20
                     </div>
                     <Progress 
-                      value={(selectedResult.evaluation.total_score / 20) * 100} 
+                      value={(selectedResult.evaluation.total_score / 50) * 100} 
                       className="h-3 mt-2"
                     />
+                  </div>
+
+                {/* AI Generated Keywords */}
+                  <div className="mb-4">
+                    <h4 className="font-medium mb-2 text-primary">AI Generated Keywords ({extractedKeywords.length})</h4>
+                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto bg-secondary/30 p-2 rounded-lg">
+                      {extractedKeywords.map((keyword, i) => (
+                        <Badge key={i} variant="outline" className="text-xs bg-primary/10">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Keywords Analysis */}
