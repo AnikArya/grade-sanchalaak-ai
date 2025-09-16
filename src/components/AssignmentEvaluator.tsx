@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Brain, CheckCircle, FileText, Upload, Settings, LogOut } from "lucide-react";
-import { OpenAIService } from "@/services/OpenAIService";
+import { GeminiService } from "@/services/GeminiService";
 import { ParsedContent } from "@/services/FileParserService";
 import FileUpload from "@/components/FileUpload";
 import ApiKeySetup from "@/components/ApiKeySetup";
@@ -35,7 +35,7 @@ const AssignmentEvaluator = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const apiKey = OpenAIService.getApiKey();
+    const apiKey = GeminiService.getApiKey();
     setHasApiKey(!!apiKey);
   }, []);
 
@@ -64,7 +64,7 @@ const AssignmentEvaluator = () => {
     
     try {
       // For single assignment evaluation, we'll use empty keywords array
-      const evaluation = await OpenAIService.evaluateAssignment(textToEvaluate, []);
+      const evaluation = await GeminiService.evaluateAssignment(textToEvaluate, []);
       setResult(evaluation);
       
       toast({
@@ -88,7 +88,7 @@ const AssignmentEvaluator = () => {
   };
 
   const handleLogout = () => {
-    OpenAIService.removeApiKey();
+    GeminiService.removeApiKey();
     setHasApiKey(false);
     setResult(null);
     setAssignmentText("");

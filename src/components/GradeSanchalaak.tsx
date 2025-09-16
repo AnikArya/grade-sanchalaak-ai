@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, CheckCircle, FileText, Upload, LogOut, BookOpen, BarChart3, Key, Settings } from "lucide-react";
-import { OpenAIService } from "@/services/OpenAIService";
+import { GeminiService } from "@/services/GeminiService";
 import { ParsedContent } from "@/services/FileParserService";
 import BatchFileUpload from "@/components/BatchFileUpload";
 import BatchEvaluationResults from "@/components/BatchEvaluationResults";
@@ -29,7 +29,7 @@ const GradeSanchalaak = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const apiKey = OpenAIService.getApiKey();
+    const apiKey = GeminiService.getApiKey();
     setHasApiKey(!!apiKey);
   }, []);
 
@@ -45,7 +45,7 @@ const GradeSanchalaak = () => {
 
     setIsProcessing(true);
     try {
-      const keywords = await OpenAIService.extractKeywords(assignmentProblem);
+      const keywords = await GeminiService.extractKeywords(assignmentProblem);
       setExtractedKeywords(keywords);
       setStep('upload');
       
@@ -82,7 +82,7 @@ const GradeSanchalaak = () => {
       for (let i = 0; i < uploadedFiles.length; i++) {
         const file = uploadedFiles[i];
         try {
-          const evaluation = await OpenAIService.evaluateAssignment(file.text, extractedKeywords);
+          const evaluation = await GeminiService.evaluateAssignment(file.text, extractedKeywords);
           results.push({
             filename: file.filename,
             evaluation: evaluation
@@ -126,7 +126,7 @@ const GradeSanchalaak = () => {
   };
 
   const handleLogout = () => {
-    OpenAIService.removeApiKey();
+    GeminiService.removeApiKey();
     setHasApiKey(false);
     resetApp();
     toast({

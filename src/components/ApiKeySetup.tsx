@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Key, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { OpenAIService } from "@/services/OpenAIService";
+import { GeminiService } from "@/services/GeminiService";
 import { useToast } from "@/hooks/use-toast";
 
 interface ApiKeySetupProps {
@@ -25,10 +25,10 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
     setIsValidating(true);
     
     try {
-      const isValid = await OpenAIService.testApiKey(apiKey);
+      const isValid = await GeminiService.testApiKey(apiKey);
       
       if (isValid) {
-        OpenAIService.saveApiKey(apiKey);
+        GeminiService.saveApiKey(apiKey);
         toast({
           title: "Success!",
           description: "API key validated and saved successfully.",
@@ -37,7 +37,7 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
       } else {
         toast({
           title: "Invalid API Key",
-          description: "Please check your OpenAI API key and try again.",
+          description: "Please check your Google Gemini API key and try again.",
           variant: "destructive",
         });
       }
@@ -60,9 +60,9 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
             <Key className="w-4 h-4" />
             <span className="text-sm font-semibold">Setup Required</span>
           </div>
-          <CardTitle className="text-2xl">OpenAI API Key</CardTitle>
+          <CardTitle className="text-2xl">Google Gemini API Key</CardTitle>
           <CardDescription>
-            {OpenAIService.getApiKey() ? 'Update your OpenAI API key below' : 'Enter your OpenAI API key to enable AI-powered assignment evaluation'}
+            {GeminiService.getApiKey() ? 'Update your Google Gemini API key below' : 'Enter your Google Gemini API key to enable AI-powered assignment evaluation'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -76,14 +76,14 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="apiKey">OpenAI API Key</Label>
+              <Label htmlFor="apiKey">Google Gemini API Key</Label>
               <div className="relative">
                 <Input
                   id="apiKey"
                   type={showApiKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
+                  placeholder="AIza..."
                   className="pr-10"
                   required
                 />
@@ -100,12 +100,12 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
               <p className="text-xs text-muted-foreground">
                 Get your API key from{" "}
                 <a 
-                  href="https://platform.openai.com/api-keys" 
+                  href="https://aistudio.google.com/app/apikey" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  OpenAI Platform
+                  Google AI Studio
                 </a>
               </p>
             </div>
@@ -115,7 +115,7 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
               className="w-full bg-gradient-primary hover:shadow-glow"
               disabled={!apiKey.trim() || isValidating}
             >
-              {isValidating ? "Validating..." : OpenAIService.getApiKey() ? "Update API Key" : "Save & Continue"}
+              {isValidating ? "Validating..." : GeminiService.getApiKey() ? "Update API Key" : "Save & Continue"}
             </Button>
           </form>
         </CardContent>

@@ -1,22 +1,22 @@
-interface OpenAIMessage {
-  role: 'system' | 'user';
-  content: string;
+interface GeminiMessage {
+  role: 'user' | 'model';
+  parts: Array<{ text: string }>;
 }
 
-interface OpenAIResponse {
-  choices: Array<{
-    message: {
-      content: string;
+interface GeminiResponse {
+  candidates: Array<{
+    content: {
+      parts: Array<{ text: string }>;
     };
   }>;
 }
 
-export class OpenAIService {
-  private static API_KEY_STORAGE_KEY = 'openai_api_key';
+export class GeminiService {
+  private static API_KEY_STORAGE_KEY = 'gemini_api_key';
   
   static saveApiKey(apiKey: string): void {
     localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
-    console.log('OpenAI API key saved successfully');
+    console.log('Gemini API key saved successfully');
   }
 
   static getApiKey(): string | null {
@@ -29,10 +29,8 @@ export class OpenAIService {
 
   static async testApiKey(apiKey: string): Promise<boolean> {
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+        method: 'GET',
       });
       return response.ok;
     } catch (error) {
@@ -44,13 +42,10 @@ export class OpenAIService {
   static async extractKeywords(assignmentProblem: string): Promise<string[]> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('OpenAI API key not found');
+      throw new Error('Gemini API key not found');
     }
 
-    const messages: OpenAIMessage[] = [
-      {
-        role: 'system',
-        content: `You are a keyword extraction specialist. Your job is to extract 50 highly relevant, domain-specific keywords from assignment problems that will be used to evaluate student solutions.
+    const prompt = `You are a keyword extraction specialist. Your job is to extract 50 highly relevant, domain-specific keywords from assignment problems that will be used to evaluate student solutions.
 
 Extract keywords that are:
 - Technical terms, concepts, methodologies
@@ -63,34 +58,34 @@ Extract keywords that are:
 Avoid generic terms like: "important", "good", "analysis", "conclusion", "introduction"
 
 Return ONLY a valid JSON array of exactly 50 keywords:
-["keyword1", "keyword2", ..., "keyword50"]`
-      },
-      {
-        role: 'user',
-        content: `Extract 50 relevant keywords from this assignment problem:\n\n${assignmentProblem}`
-      }
-    ];
+["keyword1", "keyword2", ..., "keyword50"]
+
+Extract 50 relevant keywords from this assignment problem:
+
+${assignmentProblem}`;
 
     try {
-      console.log('Making OpenAI request with:', {
-        model: 'gpt-4.1-2025-04-14',
-        messageCount: messages.length,
+      console.log('Making Gemini request with:', {
+        model: 'gemini-pro',
+        promptLength: prompt.length,
         assignmentLength: assignmentProblem.length
       });
 
       const requestBody = {
-        model: 'gpt-4.1-2025-04-14',
-        messages: messages,
-        max_completion_tokens: 1000,
-        response_format: { type: 'json_object' }
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1000,
+        }
       };
 
       console.log('Request body:', requestBody);
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
@@ -101,7 +96,7 @@ Return ONLY a valid JSON array of exactly 50 keywords:
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenAI API Error Response:', errorText);
+        console.error('Gemini API Error Response:', errorText);
         let errorData;
         try {
           errorData = JSON.parse(errorText);
@@ -114,33 +109,41 @@ Return ONLY a valid JSON array of exactly 50 keywords:
       const responseText = await response.text();
       console.log('Raw response text:', responseText);
       
-      let data: OpenAIResponse;
+      let data: GeminiResponse;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Failed to parse response as JSON:', parseError);
-        throw new Error('Invalid JSON response from OpenAI');
+        throw new Error('Invalid JSON response from Gemini');
       }
       
-      console.log('Parsed OpenAI Response:', data);
+      console.log('Parsed Gemini Response:', data);
       
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No choices in OpenAI response');
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new Error('No candidates in Gemini response');
       }
       
-      const content = data.choices[0]?.message?.content;
+      const content = data.candidates[0]?.content?.parts?.[0]?.text;
       
       if (!content) {
         console.error('Empty content in response:', data);
-        throw new Error('No response content received from OpenAI');
+        throw new Error('No response content received from Gemini');
       }
 
       try {
-        const result = JSON.parse(content);
-        return Array.isArray(result) ? result : result.keywords || [];
+        // Extract JSON from the response which might contain markdown formatting
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const result = JSON.parse(jsonMatch[0]);
+          return Array.isArray(result) ? result : [];
+        } else {
+          // Try parsing the entire content as JSON
+          const result = JSON.parse(content);
+          return Array.isArray(result) ? result : result.keywords || [];
+        }
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError, 'Content:', content);
-        throw new Error('Failed to parse OpenAI response');
+        throw new Error('Failed to parse Gemini response');
       }
     } catch (error) {
       console.error('Error extracting keywords:', error);
@@ -151,7 +154,7 @@ Return ONLY a valid JSON array of exactly 50 keywords:
   static async evaluateAssignment(assignmentText: string, referenceKeywords: string[]): Promise<any> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('OpenAI API key not found');
+      throw new Error('Gemini API key not found');
     }
 
     // Check if assignment only contains keywords (warning detection)
@@ -162,10 +165,7 @@ Return ONLY a valid JSON array of exactly 50 keywords:
     
     const isKeywordOnly = wordCount < 100 && (keywordMatches / wordCount) > 0.3;
 
-    const messages: OpenAIMessage[] = [
-      {
-        role: 'system',
-        content: `You are an AI-powered assignment evaluator named "Grade Sanchalaak". 
+    const prompt = `You are an AI-powered assignment evaluator named "Grade Sanchalaak". 
 Evaluate student assignments based on provided reference keywords and content quality.
 
 Reference Keywords: ${referenceKeywords.join(', ')}
@@ -194,54 +194,63 @@ Return ONLY a valid JSON response:
   "is_keyword_only": ${isKeywordOnly},
   "feedback": "...",
   "warning": "${isKeywordOnly ? 'Assignment appears to contain only keywords without proper explanations.' : ''}"
-}`
-      },
-      {
-        role: 'user',
-        content: `Evaluate this assignment:\n\n${assignmentText}`
-      }
-    ];
+}
+
+Evaluate this assignment:
+
+${assignmentText}`;
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const requestBody = {
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1500,
+        }
+      };
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
-          messages: messages,
-          max_completion_tokens: 1500,
-          response_format: { type: 'json_object' }
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('OpenAI API Error:', errorData);
+        console.error('Gemini API Error:', errorData);
         throw new Error(errorData.error?.message || 'Failed to evaluate assignment');
       }
 
-      const data: OpenAIResponse = await response.json();
-      console.log('OpenAI Evaluation Response:', data);
+      const data: GeminiResponse = await response.json();
+      console.log('Gemini Evaluation Response:', data);
       
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No choices in OpenAI response');
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new Error('No candidates in Gemini response');
       }
       
-      const content = data.choices[0]?.message?.content;
+      const content = data.candidates[0]?.content?.parts?.[0]?.text;
       
       if (!content) {
         console.error('Empty content in response:', data);
-        throw new Error('No response content received from OpenAI');
+        throw new Error('No response content received from Gemini');
       }
 
       try {
-        return JSON.parse(content);
+        // Extract JSON from the response which might contain markdown formatting
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        } else {
+          // Try parsing the entire content as JSON
+          return JSON.parse(content);
+        }
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError, 'Content:', content);
-        throw new Error('Failed to parse OpenAI response');
+        throw new Error('Failed to parse Gemini response');
       }
     } catch (error) {
       console.error('Error evaluating assignment:', error);
