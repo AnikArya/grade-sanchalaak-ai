@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, CheckCircle, FileText, Upload, LogOut, BookOpen, BarChart3 } from "lucide-react";
+import { Brain, CheckCircle, FileText, Upload, LogOut, BookOpen, BarChart3, Key, Settings } from "lucide-react";
 import { OpenAIService } from "@/services/OpenAIService";
 import { ParsedContent } from "@/services/FileParserService";
 import BatchFileUpload from "@/components/BatchFileUpload";
@@ -25,6 +25,7 @@ const GradeSanchalaak = () => {
   const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -117,6 +118,11 @@ const GradeSanchalaak = () => {
 
   const handleApiKeySet = () => {
     setHasApiKey(true);
+    setShowApiKeySetup(false);
+  };
+
+  const handleUpdateApiKey = () => {
+    setShowApiKeySetup(true);
   };
 
   const handleLogout = () => {
@@ -265,67 +271,104 @@ const GradeSanchalaak = () => {
     }
   };
 
-  if (!hasApiKey) {
+  if (!hasApiKey || showApiKeySetup) {
     return <ApiKeySetup onApiKeySet={handleApiKeySet} />;
   }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <div className="container max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Enhanced Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-6">
             <div className="flex-1"></div>
             <div className="inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground px-4 py-2 rounded-full shadow-glow">
               <Brain className="w-5 h-5" />
               <span className="font-semibold">AI-Powered Batch Evaluator</span>
             </div>
-            <div className="flex-1 flex justify-end">
+            <div className="flex-1 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUpdateApiKey}
+                className="gap-2 hover:bg-accent hover:text-accent-foreground border-2 border-primary/20 hover:border-primary transition-all duration-200"
+              >
+                <Key className="w-4 h-4" />
+                Update API Key
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="gap-2"
+                className="gap-2 text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-all duration-200"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
               </Button>
             </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
-            Grade Sanchalaak
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Advanced AI assignment evaluator with keyword extraction and batch processing. 
-            Extract 50 keywords from assignment problems, then evaluate up to 100 student solutions.
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow">
+              <span className="text-2xl font-bold text-primary-foreground">GS</span>
+            </div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+              Grade Sanchalaak
+            </h1>
+          </div>
+          <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            Advanced AI assignment evaluator with intelligent keyword extraction and batch processing. 
+            Extract 50 domain-specific keywords from assignment problems, then evaluate up to 100 student solutions with comprehensive scoring.
           </p>
+          <div className="flex justify-center mt-6">
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-success rounded-full"></div>
+                <span>50 Keywords Extraction</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-accent rounded-full"></div>
+                <span>Batch Processing</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                <span>PDF & Excel Reports</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Progress Steps */}
+        {/* Enhanced Progress Steps */}
         <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-              step === 'problem' ? 'bg-primary text-primary-foreground' : 
-              extractedKeywords.length > 0 ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
+          <div className="flex items-center gap-6 bg-card p-4 rounded-xl shadow-elegant">
+            <div className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+              step === 'problem' ? 'bg-gradient-primary text-primary-foreground shadow-glow' : 
+              extractedKeywords.length > 0 ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
             }`}>
-              <FileText className="w-4 h-4" />
-              Problem & Keywords
+              <FileText className="w-5 h-5" />
+              <span>Problem & Keywords</span>
+              {extractedKeywords.length > 0 && <CheckCircle className="w-4 h-4" />}
             </div>
-            <div className="w-8 h-px bg-border"></div>
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-              step === 'upload' ? 'bg-primary text-primary-foreground' : 
-              uploadedFiles.length > 0 ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
+            <div className={`w-12 h-0.5 transition-colors duration-300 ${
+              extractedKeywords.length > 0 ? 'bg-success' : 'bg-border'
+            }`}></div>
+            <div className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+              step === 'upload' ? 'bg-gradient-primary text-primary-foreground shadow-glow' : 
+              uploadedFiles.length > 0 ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
             }`}>
-              <Upload className="w-4 h-4" />
-              Batch Upload
+              <Upload className="w-5 h-5" />
+              <span>Batch Upload</span>
+              {uploadedFiles.length > 0 && <CheckCircle className="w-4 h-4" />}
             </div>
-            <div className="w-8 h-px bg-border"></div>
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-              step === 'results' ? 'bg-primary text-primary-foreground' : 
-              batchResults.length > 0 ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
+            <div className={`w-12 h-0.5 transition-colors duration-300 ${
+              uploadedFiles.length > 0 ? 'bg-success' : 'bg-border'
+            }`}></div>
+            <div className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+              step === 'results' ? 'bg-gradient-primary text-primary-foreground shadow-glow' : 
+              batchResults.length > 0 ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
             }`}>
-              <BarChart3 className="w-4 h-4" />
-              Results
+              <BarChart3 className="w-5 h-5" />
+              <span>Results</span>
+              {batchResults.length > 0 && <CheckCircle className="w-4 h-4" />}
             </div>
           </div>
         </div>

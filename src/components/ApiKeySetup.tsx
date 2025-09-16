@@ -62,7 +62,7 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
           </div>
           <CardTitle className="text-2xl">OpenAI API Key</CardTitle>
           <CardDescription>
-            Enter your OpenAI API key to enable AI-powered assignment evaluation
+            {OpenAIService.getApiKey() ? 'Update your OpenAI API key below' : 'Enter your OpenAI API key to enable AI-powered assignment evaluation'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -115,7 +115,7 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
               className="w-full bg-gradient-primary hover:shadow-glow"
               disabled={!apiKey.trim() || isValidating}
             >
-              {isValidating ? "Validating..." : "Save & Continue"}
+              {isValidating ? "Validating..." : OpenAIService.getApiKey() ? "Update API Key" : "Save & Continue"}
             </Button>
           </form>
         </CardContent>
