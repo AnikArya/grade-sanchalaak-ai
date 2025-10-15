@@ -37,7 +37,7 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
       } else {
         toast({
           title: "Invalid API Key",
-          description: "Please check your Google Gemini API key and try again.",
+          description: "Please check your OpenAI API key and try again.",
           variant: "destructive",
         });
       }
@@ -60,9 +60,9 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
             <Key className="w-4 h-4" />
             <span className="text-sm font-semibold">Setup Required</span>
           </div>
-          <CardTitle className="text-2xl">Google Gemini API Key</CardTitle>
+          <CardTitle className="text-2xl">OpenAI API Key</CardTitle>
           <CardDescription>
-            {GeminiService.getApiKey() ? 'Update your Google Gemini API key below' : 'Enter your Google Gemini API key to enable AI-powered assignment evaluation'}
+            {GeminiService.getApiKey() ? 'Update your OpenAI API key below' : 'Enter your OpenAI API key to enable AI-powered assignment evaluation'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -76,14 +76,14 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="apiKey">Google Gemini API Key</Label>
+              <Label htmlFor="apiKey">OpenAI API Key</Label>
               <div className="relative">
                 <Input
                   id="apiKey"
                   type={showApiKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="AIza..."
+                  placeholder="sk-proj-..."
                   className="pr-10"
                   required
                 />
@@ -100,12 +100,12 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
               <p className="text-xs text-muted-foreground">
                 Get your API key from{" "}
                 <a 
-                  href="https://aistudio.google.com/app/apikey" 
+                  href="https://platform.openai.com/api-keys" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  Google AI Studio
+                  OpenAI Platform
                 </a>
               </p>
             </div>
