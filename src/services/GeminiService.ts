@@ -66,7 +66,7 @@ ${assignmentProblem}`;
 
     try {
       console.log('Making Gemini request with:', {
-        model: 'gemini-pro',
+        model: 'gemini-1.5-flash',
         promptLength: prompt.length,
         assignmentLength: assignmentProblem.length
       });
@@ -83,7 +83,7 @@ ${assignmentProblem}`;
 
       console.log('Request body:', requestBody);
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +211,7 @@ ${assignmentText}`;
         }
       };
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
