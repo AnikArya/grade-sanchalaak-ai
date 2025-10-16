@@ -1,22 +1,23 @@
-interface OpenAIMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
+interface GeminiContent {
+  parts: Array<{ text: string }>;
 }
 
-interface OpenAIResponse {
-  choices: Array<{
-    message: {
-      content: string;
+interface GeminiResponse {
+  candidates: Array<{
+    content: {
+      parts: Array<{
+        text: string;
+      }>;
     };
   }>;
 }
 
 export class GeminiService {
-  private static API_KEY_STORAGE_KEY = 'openai_api_key';
+  private static API_KEY_STORAGE_KEY = 'gemini_api_key';
   
   static saveApiKey(apiKey: string): void {
     localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
-    console.log('OpenAI API key saved successfully');
+    console.log('Gemini API key saved successfully');
   }
 
   static getApiKey(): string | null {
@@ -29,12 +30,23 @@ export class GeminiService {
 
   static async testApiKey(apiKey: string): Promise<boolean> {
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: 'Test' }]
+              }
+            ]
+          }),
+        }
+      );
       return response.ok;
     } catch (error) {
       console.error('Error testing API key:', error);
@@ -68,39 +80,44 @@ Extract 50 relevant keywords from this assignment problem:
 ${assignmentProblem}`;
 
     try {
-      console.log('Making OpenAI request with:', {
-        model: 'gpt-5-nano-2025-08-07',
+      console.log('Making Gemini request with:', {
+        model: 'gemini-2.0-flash',
         promptLength: prompt.length,
         assignmentLength: assignmentProblem.length
       });
 
       const requestBody = {
-        model: 'gpt-5-nano-2025-08-07',
-        messages: [
-          { role: 'system', content: 'You are a keyword extraction specialist. Return only valid JSON arrays.' },
-          { role: 'user', content: prompt }
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
         ],
-        temperature: 0.1,
-        max_completion_tokens: 1000,
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1000,
+        }
       };
 
       console.log('Request body:', requestBody);
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       console.log('Response status:', response.status);
       console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenAI API Error Response:', errorText);
+        console.error('Gemini API Error Response:', errorText);
         let errorData;
         try {
           errorData = JSON.parse(errorText);
@@ -108,26 +125,21 @@ ${assignmentProblem}`;
           errorData = { error: { message: errorText } };
         }
         
-        // Handle specific error cases
-        if (response.status === 429 || errorData.error?.code === 'insufficient_quota') {
-          throw new Error('You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.');
-        }
-        
         throw new Error(errorData.error?.message || 'Failed to extract keywords');
       }
 
-      const data = await response.json();
-      console.log('Parsed OpenAI Response:', data);
+      const data: GeminiResponse = await response.json();
+      console.log('Parsed Gemini Response:', data);
       
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No choices in OpenAI response');
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new Error('No candidates in Gemini response');
       }
       
-      const content = data.choices[0]?.message?.content;
+      const content = data.candidates[0]?.content?.parts?.[0]?.text;
       
       if (!content) {
         console.error('Empty content in response:', data);
-        throw new Error('No response content received from OpenAI');
+        throw new Error('No response content received from Gemini');
       }
 
       try {
@@ -143,7 +155,7 @@ ${assignmentProblem}`;
         }
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError, 'Content:', content);
-        throw new Error('Failed to parse OpenAI response');
+        throw new Error('Failed to parse Gemini response');
       }
     } catch (error) {
       console.error('Error extracting keywords:', error);
@@ -154,7 +166,7 @@ ${assignmentProblem}`;
   static async evaluateAssignment(assignmentText: string, referenceKeywords: string[]): Promise<any> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('OpenAI API key not found');
+      throw new Error('Gemini API key not found');
     }
 
     // Check if assignment only contains keywords (warning detection)
@@ -202,27 +214,32 @@ ${assignmentText}`;
 
     try {
       const requestBody = {
-        model: 'gpt-5-nano-2025-08-07',
-        messages: [
-          { role: 'system', content: 'You are an AI-powered assignment evaluator. Return only valid JSON responses.' },
-          { role: 'user', content: prompt }
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
         ],
-        temperature: 0.1,
-        max_completion_tokens: 1500,
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1500,
+        }
       };
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenAI API Error:', errorText);
+        console.error('Gemini API Error:', errorText);
         let errorData;
         try {
           errorData = JSON.parse(errorText);
@@ -230,26 +247,21 @@ ${assignmentText}`;
           errorData = { error: { message: errorText } };
         }
         
-        // Handle specific error cases
-        if (response.status === 429 || errorData.error?.code === 'insufficient_quota') {
-          throw new Error('You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.');
-        }
-        
         throw new Error(errorData.error?.message || 'Failed to evaluate assignment');
       }
 
-      const data = await response.json();
-      console.log('OpenAI Evaluation Response:', data);
+      const data: GeminiResponse = await response.json();
+      console.log('Gemini Evaluation Response:', data);
       
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No choices in OpenAI response');
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new Error('No candidates in Gemini response');
       }
       
-      const content = data.choices[0]?.message?.content;
+      const content = data.candidates[0]?.content?.parts?.[0]?.text;
       
       if (!content) {
         console.error('Empty content in response:', data);
-        throw new Error('No response content received from OpenAI');
+        throw new Error('No response content received from Gemini');
       }
 
       try {
@@ -263,7 +275,7 @@ ${assignmentText}`;
         }
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError, 'Content:', content);
-        throw new Error('Failed to parse OpenAI response');
+        throw new Error('Failed to parse Gemini response');
       }
     } catch (error) {
       console.error('Error evaluating assignment:', error);
