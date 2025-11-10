@@ -14,16 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assignments: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          title: string
+          total_marks: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          title: string
+          total_marks?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          title?: string
+          total_marks?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      evaluations: {
+        Row: {
+          evaluated_at: string
+          evaluated_by: string | null
+          feedback: string | null
+          id: string
+          keyword_coverage: number | null
+          marks_obtained: number
+          matched_keywords: string[] | null
+          missing_keywords: string[] | null
+          rubric_scores: Json | null
+          submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          evaluated_at?: string
+          evaluated_by?: string | null
+          feedback?: string | null
+          id?: string
+          keyword_coverage?: number | null
+          marks_obtained: number
+          matched_keywords?: string[] | null
+          missing_keywords?: string[] | null
+          rubric_scores?: Json | null
+          submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          evaluated_at?: string
+          evaluated_by?: string | null
+          feedback?: string | null
+          id?: string
+          keyword_coverage?: number | null
+          marks_obtained?: number
+          matched_keywords?: string[] | null
+          missing_keywords?: string[] | null
+          rubric_scores?: Json | null
+          submission_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: true
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          assignment_id: string
+          file_name: string
+          file_url: string
+          id: string
+          student_id: string
+          submitted_at: string
+        }
+        Insert: {
+          assignment_id: string
+          file_name: string
+          file_url: string
+          id?: string
+          student_id: string
+          submitted_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          student_id?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "teacher" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +318,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["teacher", "student"],
+    },
   },
 } as const
