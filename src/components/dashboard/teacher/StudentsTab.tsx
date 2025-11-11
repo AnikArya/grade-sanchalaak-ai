@@ -63,48 +63,27 @@ const StudentsTab = () => {
     const fullName = formData.get("fullName") as string;
     const role = formData.get("role") as string;
 
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ email, password, fullName, role }),
+        }
+      );
 
-    if (authError) {
-      toast({
-        title: "Error",
-        description: authError.message,
-        variant: "destructive",
-      });
-      return;
-    }
+      const result = await response.json();
 
-    if (!authData.user) {
-      toast({
-        title: "Error",
-        description: "Failed to create user",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create user');
+      }
 
-    // Assign role
-    const { error: roleError } = await supabase.from("user_roles").insert([{
-      user_id: authData.user.id,
-      role: role as "teacher" | "student",
-    }]);
-
-    if (roleError) {
-      toast({
-        title: "Error",
-        description: "User created but role assignment failed",
-        variant: "destructive",
-      });
-    } else {
       toast({
         title: "Success",
         description: `${role === 'student' ? 'Student' : 'Teacher'} added successfully`,
@@ -112,6 +91,12 @@ const StudentsTab = () => {
       setOpen(false);
       fetchStudents();
       (e.target as HTMLFormElement).reset();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      });
     }
   };
 
