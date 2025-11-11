@@ -28,31 +28,45 @@ const StudentsTab = () => {
   }, []);
 
   const fetchStudents = async () => {
-    const { data: profiles, error } = await supabase
-      .from("profiles")
-      .select(`
-        id,
-        email,
-        full_name,
-        user_roles(role)
-      `);
+    try {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          email,
+          full_name
+        `);
 
-    if (error) {
+      if (error) throw error;
+
+      // Fetch roles separately
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) throw rolesError;
+
+      // Combine the data
+      const studentsData = profiles?.map((p: any) => {
+        const userRole = roles?.find((r: any) => r.user_id === p.id);
+        return {
+          id: p.id,
+          email: p.email,
+          full_name: p.full_name,
+          role: userRole?.role,
+        };
+      }) || [];
+
+      setStudents(studentsData);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to fetch students",
+        description: error.message || "Failed to fetch students",
         variant: "destructive",
       });
-    } else {
-      const studentsData = profiles?.map((p: any) => ({
-        id: p.id,
-        email: p.email,
-        full_name: p.full_name,
-        role: p.user_roles?.[0]?.role,
-      })) || [];
-      setStudents(studentsData);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAddStudent = async (e: React.FormEvent<HTMLFormElement>) => {
