@@ -72,25 +72,60 @@ const EvaluationsTab = ({ teacherId }: EvaluationsTabProps) => {
 
   const fetchSubmissions = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("submissions")
-      .select(`
-        *,
-        profiles:student_id(full_name, email),
-        evaluations(marks_obtained, keyword_coverage, feedback)
-      `)
-      .eq("assignment_id", selectedAssignment);
+    try {
+      // Fetch submissions
+      const { data: subs, error: subsError } = await supabase
+        .from("submissions")
+        .select("*")
+        .eq("assignment_id", selectedAssignment);
 
-    if (error) {
+      if (subsError) throw subsError;
+
+      if (!subs || subs.length === 0) {
+        setSubmissions([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch profiles
+      const studentIds = subs.map(s => s.student_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", studentIds);
+
+      if (profilesError) throw profilesError;
+
+      // Fetch evaluations
+      const submissionIds = subs.map(s => s.id);
+      const { data: evals, error: evalsError } = await supabase
+        .from("evaluations")
+        .select("*")
+        .in("submission_id", submissionIds);
+
+      if (evalsError) throw evalsError;
+
+      // Combine data
+      const combinedData = subs.map(sub => {
+        const profile = profiles?.find(p => p.id === sub.student_id);
+        const evaluation = evals?.filter(e => e.submission_id === sub.id);
+        return {
+          ...sub,
+          profiles: profile || { full_name: "Unknown", email: "Unknown" },
+          evaluations: evaluation || [],
+        };
+      });
+
+      setSubmissions(combinedData as any);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to fetch submissions",
+        description: error.message || "Failed to fetch submissions",
         variant: "destructive",
       });
-    } else {
-      setSubmissions(data as any || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const evaluatedCount = submissions.filter(s => s.evaluations && s.evaluations.length > 0).length;
