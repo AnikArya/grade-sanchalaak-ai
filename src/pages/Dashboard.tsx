@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
 import TeacherDashboard from "@/components/dashboard/TeacherDashboard";
+import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<"teacher" | "student" | null>(null);
+  const [userRole, setUserRole] = useState<"teacher" | "student" | "admin" | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,7 +54,7 @@ const Dashboard = () => {
       return;
     }
 
-    setUserRole(roles.role as "teacher" | "student");
+    setUserRole(roles.role as "teacher" | "student" | "admin");
     setLoading(false);
   };
 
@@ -76,6 +77,10 @@ const Dashboard = () => {
         </div>
       </div>
     );
+  }
+
+  if (userRole === "admin") {
+    return <AdminDashboard userId={userId!} />;
   }
 
   return userRole === "teacher" ? (
