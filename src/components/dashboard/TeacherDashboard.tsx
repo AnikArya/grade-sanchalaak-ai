@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import AssignmentsTab from "./teacher/AssignmentsTab";
 import StudentsTab from "./teacher/StudentsTab";
 import EvaluationsTab from "./teacher/EvaluationsTab";
+import OverviewTab from "./teacher/OverviewTab";
 
 interface TeacherDashboardProps {
   userId: string;
@@ -37,12 +38,17 @@ const TeacherDashboard = ({ userId }: TeacherDashboardProps) => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="assignments" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto">
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="students">Students</TabsTrigger>
             <TabsTrigger value="evaluations">Evaluations</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview">
+            <OverviewTab teacherId={userId} />
+          </TabsContent>
 
           <TabsContent value="assignments">
             <AssignmentsTab teacherId={userId} />
