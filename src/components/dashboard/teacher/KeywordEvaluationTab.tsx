@@ -160,10 +160,16 @@ const KeywordEvaluationTab = () => {
       const studentName = submission.profiles?.full_name || "Unknown Student";
       setCurrentEvaluating(studentName);
       
+      // Extract the file path from the full URL
+      // file_url format: https://...supabase.co/storage/v1/object/public/submissions/path/to/file.pdf
+      // We need just: path/to/file.pdf
+      const urlParts = submission.file_url.split('/submissions/');
+      const filePath = urlParts.length > 1 ? urlParts[1] : submission.file_url;
+      
       // Fetch file content from storage
       const { data: fileData, error: fileError } = await supabase.storage
         .from("submissions")
-        .download(submission.file_url);
+        .download(filePath);
 
       if (fileError) throw new Error("Failed to download submission file");
 
