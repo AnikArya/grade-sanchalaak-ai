@@ -9,6 +9,7 @@ import AssignmentsTab from "./teacher/AssignmentsTab";
 import StudentsTab from "./teacher/StudentsTab";
 import EvaluationsTab from "./teacher/EvaluationsTab";
 import OverviewTab from "./teacher/OverviewTab";
+import KeywordEvaluationTab from "./teacher/KeywordEvaluationTab";
 
 interface TeacherDashboardProps {
   userId: string;
@@ -39,11 +40,12 @@ const TeacherDashboard = ({ userId }: TeacherDashboardProps) => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto">
+          <TabsList className="grid w-full grid-cols-5 max-w-4xl mx-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="students">Students</TabsTrigger>
-            <TabsTrigger value="evaluations">Evaluations</TabsTrigger>
+            <TabsTrigger value="keyword-eval">Keyword Eval</TabsTrigger>
+            <TabsTrigger value="evaluations">Reports</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -54,13 +56,17 @@ const TeacherDashboard = ({ userId }: TeacherDashboardProps) => {
             <AssignmentsTab teacherId={userId} />
           </TabsContent>
 
-          <TabsContent value="students">
-            <StudentsTab />
-          </TabsContent>
+        <TabsContent value="students">
+          <StudentsTab />
+        </TabsContent>
 
-          <TabsContent value="evaluations">
-            <EvaluationsTab teacherId={userId} />
-          </TabsContent>
+        <TabsContent value="keyword-eval">
+          <KeywordEvaluationTab />
+        </TabsContent>
+
+        <TabsContent value="evaluations">
+          <EvaluationsTab teacherId={userId} />
+        </TabsContent>
         </Tabs>
       </main>
     </div>
