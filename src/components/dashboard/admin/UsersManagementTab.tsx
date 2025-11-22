@@ -71,7 +71,7 @@ const UsersManagementTab = () => {
     const formData = new FormData(e.currentTarget);
 
     try {
-      const { error } = await supabase.functions.invoke("create-user", {
+      const { data, error } = await supabase.functions.invoke("create-user", {
         body: {
           email: formData.get("email") as string,
           password: formData.get("password") as string,
@@ -80,7 +80,21 @@ const UsersManagementTab = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific error cases
+        const errorMessage = error.message || "Failed to create user";
+        if (errorMessage.includes("already been registered")) {
+          throw new Error("This email is already registered. Please use a different email address.");
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (data?.error) {
+        if (data.error.includes("already been registered")) {
+          throw new Error("This email is already registered. Please use a different email address.");
+        }
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Success",
