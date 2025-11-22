@@ -52,8 +52,8 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (roleError || roleData?.role !== 'teacher') {
-      throw new Error('Only teachers can create users');
+    if (roleError || (roleData?.role !== 'teacher' && roleData?.role !== 'admin')) {
+      throw new Error('Only teachers and admins can create users');
     }
 
     // Get user details from request
