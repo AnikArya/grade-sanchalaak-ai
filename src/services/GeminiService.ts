@@ -60,22 +60,29 @@ export class GeminiService {
       throw new Error('OpenAI API key not found');
     }
 
-    const prompt = `You are a keyword extraction specialist. Your job is to extract 50 highly relevant, domain-specific keywords from assignment problems that will be used to evaluate student solutions.
+    const prompt = `You are a keyword extraction specialist for academic assignment evaluation. Extract 30-40 highly relevant, domain-specific keywords from the assignment problem that will be used to assess student submissions.
 
-Extract keywords that are:
-- Technical terms, concepts, methodologies
-- Subject-specific terminology
-- Key processes, principles, or theories
-- Important tools, frameworks, or models
-- Critical skills or competencies
-- Domain-specific jargon and terminology
+FOCUS ON:
+- Core technical terms and concepts central to the topic
+- Subject-specific terminology and vocabulary
+- Key processes, principles, theories, or laws
+- Important methodologies, frameworks, or models
+- Critical skills, techniques, or competencies required
+- Domain-specific jargon essential for the topic
+- Specific examples, case studies, or scenarios mentioned
 
-Avoid generic terms like: "important", "good", "analysis", "conclusion", "introduction"
+AVOID:
+- Generic academic words: "important", "good", "bad", "analysis", "conclusion", "introduction", "explanation"
+- Common verbs: "discuss", "explain", "describe", "analyze", "evaluate"
+- Vague terms without specific meaning
+- Overly broad concepts
 
-Return ONLY a valid JSON array of exactly 50 keywords:
-["keyword1", "keyword2", ..., "keyword50"]
+PRIORITIZE quality over quantity - each keyword should be meaningful and directly relevant.
 
-Extract 50 relevant keywords from this assignment problem:
+Return ONLY a valid JSON array of 30-40 keywords (no more, no less):
+["keyword1", "keyword2", ..., "keyword40"]
+
+Extract keywords from this assignment problem:
 
 ${assignmentProblem}`;
 
