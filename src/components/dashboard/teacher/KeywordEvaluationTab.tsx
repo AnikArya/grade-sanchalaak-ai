@@ -322,62 +322,69 @@ const KeywordEvaluationTab = () => {
 
           {selectedAssignment && (
             <>
-              {/* Assignment Problem/Description */}
-              <div className="space-y-2">
-                <Label>Assignment Problem/Description</Label>
-                <Textarea
-                  value={assignmentProblem}
-                  onChange={(e) => setAssignmentProblem(e.target.value)}
-                  placeholder="Enter or edit the assignment problem description..."
-                  rows={6}
-                  className="resize-none"
-                />
-              </div>
+          {/* Assignment Problem/Description */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Assignment Problem/Description</Label>
+            <Textarea
+              value={assignmentProblem}
+              onChange={(e) => setAssignmentProblem(e.target.value)}
+              placeholder="Enter or edit the assignment problem description..."
+              rows={8}
+              className="resize-none bg-background border-2 border-border focus:border-primary transition-colors"
+            />
+          </div>
 
-              {/* Extract Keywords Button */}
-              <Button
-                onClick={handleExtractKeywords}
-                disabled={isExtractingKeywords || !assignmentProblem.trim()}
-                className="w-full"
-              >
-                {isExtractingKeywords ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Extracting Keywords...
-                  </>
-                ) : (
-                  "Extract Keywords"
-                )}
-              </Button>
+          {/* Extract Keywords Button */}
+          <Button
+            onClick={handleExtractKeywords}
+            disabled={isExtractingKeywords || !assignmentProblem.trim()}
+            className="w-full"
+            size="lg"
+          >
+            {isExtractingKeywords ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Extracting Keywords...
+              </>
+            ) : (
+              "Extract Keywords from Description"
+            )}
+          </Button>
 
-              {/* Display Keywords */}
-              {keywords.length > 0 && (
-                <Alert>
-                  <AlertDescription>
-                    <div className="space-y-2">
-                      <p className="font-semibold">Extracted {keywords.length} Keywords:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {keywords.map((keyword, idx) => (
-                          <Badge key={idx} variant="secondary">
-                            {keyword}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
+          {/* Display Keywords */}
+          {keywords.length > 0 && (
+            <Card className="bg-muted/50 border-2">
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-lg">Extracted Keywords</p>
+                    <Badge variant="outline" className="text-base px-3 py-1">
+                      {keywords.length} keywords
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {keywords.map((keyword, idx) => (
+                      <Badge key={idx} variant="secondary" className="px-3 py-1.5 text-sm">
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
               {/* Submissions & Evaluation */}
               {submissions.length > 0 && keywords.length > 0 && (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold">
+                  <div className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border">
+                    <h3 className="font-semibold text-lg">
                       Submissions ({submissions.length})
                     </h3>
                     <Button
                       onClick={handleEvaluateAll}
                       disabled={isEvaluating}
+                      size="lg"
                     >
                       {isEvaluating ? (
                         <>
@@ -387,7 +394,7 @@ const KeywordEvaluationTab = () => {
                       ) : (
                         <>
                           <PlayCircle className="mr-2 h-4 w-4" />
-                          Evaluate All
+                          Evaluate All Submissions
                         </>
                       )}
                     </Button>
@@ -408,35 +415,36 @@ const KeywordEvaluationTab = () => {
                       );
 
                       return (
-                        <div
-                          key={submission.id}
-                          className="border rounded-lg p-4 space-y-2"
-                        >
+                      <Card
+                        key={submission.id}
+                        className="hover:shadow-md transition-shadow"
+                      >
+                        <CardContent className="pt-6">
                           <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">{submission.profiles?.full_name || "Unknown"}</p>
-                              <p className="text-sm text-muted-foreground">
+                            <div className="flex-1">
+                              <p className="font-semibold text-lg">{submission.profiles?.full_name || "Unknown Student"}</p>
+                              <p className="text-sm text-muted-foreground mt-1">
                                 {submission.profiles?.email || "No email"}
                               </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                File: {submission.file_name}
+                              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                                <span className="font-medium">File:</span> {submission.file_name}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
                               {evalResult ? (
                                 evalResult.success ? (
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="default">
-                                      Score: {evalResult.result.total_score}/50
+                                  <div className="flex items-center gap-3">
+                                    <Badge variant="default" className="text-base px-4 py-2">
+                                      {evalResult.result.total_score}/50
                                     </Badge>
-                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                    <CheckCircle className="h-6 w-6 text-green-500" />
                                   </div>
                                 ) : (
-                                  <Badge variant="destructive">Failed</Badge>
+                                  <Badge variant="destructive" className="px-4 py-2">Failed</Badge>
                                 )
                               ) : (
                                 <Button
-                                  size="sm"
+                                  size="default"
                                   onClick={() => handleEvaluateIndividual(submission)}
                                   disabled={isEvaluating}
                                 >
@@ -447,28 +455,51 @@ const KeywordEvaluationTab = () => {
                           </div>
 
                           {evalResult && evalResult.success && (
-                            <div className="mt-3 pt-3 border-t space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>Keyword Coverage:</span>
-                                <span className="font-medium">
-                                  {evalResult.result.keyword_coverage}/20
-                                </span>
+                            <div className="mt-4 pt-4 border-t space-y-3">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-muted/50 p-3 rounded-lg">
+                                  <p className="text-xs text-muted-foreground mb-1">Keyword Coverage</p>
+                                  <p className="text-lg font-semibold">
+                                    {evalResult.result.keyword_coverage}/20
+                                  </p>
+                                </div>
+                                <div className="bg-muted/50 p-3 rounded-lg">
+                                  <p className="text-xs text-muted-foreground mb-1">Keywords Matched</p>
+                                  <p className="text-lg font-semibold">
+                                    {evalResult.result.matched_keywords?.length || 0}/{keywords.length}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex justify-between">
-                                <span>Matched Keywords:</span>
-                                <span className="font-medium">
-                                  {evalResult.result.matched_keywords?.length || 0}
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="font-medium">Feedback:</p>
-                                <p className="text-muted-foreground text-xs">
+                              {evalResult.result.rubric && (
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Content Quality:</span>
+                                    <span className="font-medium">{evalResult.result.rubric.content_quality}/10</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Completeness:</span>
+                                    <span className="font-medium">{evalResult.result.rubric.completeness}/10</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Clarity:</span>
+                                    <span className="font-medium">{evalResult.result.rubric.clarity_language}/5</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Originality:</span>
+                                    <span className="font-medium">{evalResult.result.rubric.originality}/5</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="space-y-2 bg-muted/30 p-3 rounded-lg">
+                                <p className="font-semibold text-sm">Feedback</p>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
                                   {evalResult.result.feedback}
                                 </p>
                               </div>
                             </div>
                           )}
-                        </div>
+                        </CardContent>
+                      </Card>
                       );
                     })}
                   </div>
