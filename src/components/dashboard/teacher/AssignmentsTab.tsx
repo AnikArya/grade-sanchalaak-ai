@@ -30,12 +30,13 @@ const AssignmentsTab = ({ teacherId }: AssignmentsTabProps) => {
 
   useEffect(() => {
     fetchAssignments();
-  }, []);
+  }, [teacherId]);
 
   const fetchAssignments = async () => {
     const { data, error } = await supabase
       .from("assignments")
       .select("*")
+      .eq("created_by", teacherId)
       .order("created_at", { ascending: false });
 
     if (error) {
