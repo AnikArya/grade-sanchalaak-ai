@@ -28,7 +28,7 @@ export class GeminiService {
     localStorage.removeItem(this.API_KEY_STORAGE_KEY);
   }
 
-  static async testApiKey(apiKey: string): Promise<boolean> {
+  static async testApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
@@ -47,10 +47,26 @@ export class GeminiService {
           }),
         }
       );
-      return response.ok;
+      
+      if (response.ok) {
+        return { valid: true };
+      }
+      
+      const errorData = await response.json();
+      const errorMessage = errorData.error?.message || 'Unknown error';
+      
+      if (response.status === 429) {
+        return { valid: true, error: 'quota_exceeded' };
+      }
+      
+      if (response.status === 400 || response.status === 403) {
+        return { valid: false, error: 'invalid_key' };
+      }
+      
+      return { valid: false, error: errorMessage };
     } catch (error) {
       console.error('Error testing API key:', error);
-      return false;
+      return { valid: false, error: 'network_error' };
     }
   }
 

@@ -25,21 +25,38 @@ const ApiKeySetup = ({ onApiKeySet }: ApiKeySetupProps) => {
     setIsValidating(true);
     
     try {
-      const isValid = await GeminiService.testApiKey(apiKey);
+      const result = await GeminiService.testApiKey(apiKey);
       
-      if (isValid) {
+      if (result.valid) {
         GeminiService.saveApiKey(apiKey);
-        toast({
-          title: "Success!",
-          description: "API key validated and saved successfully.",
-        });
+        
+        if (result.error === 'quota_exceeded') {
+          toast({
+            title: "API Key Saved",
+            description: "Key saved but quota exceeded. Please wait or upgrade your Google AI plan.",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Success!",
+            description: "API key validated and saved successfully.",
+          });
+        }
         onApiKeySet();
       } else {
-        toast({
-          title: "Invalid API Key",
-          description: "Please check your Google Gemini API key and try again.",
-          variant: "destructive",
-        });
+        if (result.error === 'invalid_key') {
+          toast({
+            title: "Invalid API Key",
+            description: "Please check your Google Gemini API key and try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to validate API key.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       toast({
