@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, UserPlus, Mail, Award } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -29,33 +28,36 @@ const StudentsTab = () => {
 
   const fetchStudents = async () => {
     try {
-      const { data: profiles, error } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          email,
-          full_name
-        `);
-
-      if (error) throw error;
-
-      // Fetch roles separately
-      const { data: roles, error: rolesError } = await supabase
+      // Fetch only student roles
+      const { data: studentRoles, error: rolesError } = await supabase
         .from("user_roles")
-        .select("user_id, role");
+        .select("user_id")
+        .eq("role", "student");
 
       if (rolesError) throw rolesError;
 
-      // Combine the data
-      const studentsData = profiles?.map((p: any) => {
-        const userRole = roles?.find((r: any) => r.user_id === p.id);
-        return {
-          id: p.id,
-          email: p.email,
-          full_name: p.full_name,
-          role: userRole?.role,
-        };
-      }) || [];
+      const studentIds = studentRoles?.map((r) => r.user_id) || [];
+
+      if (studentIds.length === 0) {
+        setStudents([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch only profiles of students
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", studentIds);
+
+      if (error) throw error;
+
+      const studentsData = profiles?.map((p: any) => ({
+        id: p.id,
+        email: p.email,
+        full_name: p.full_name,
+        role: "student",
+      })) || [];
 
       setStudents(studentsData);
     } catch (error: any) {
@@ -100,7 +102,7 @@ const StudentsTab = () => {
 
       toast({
         title: "Success",
-        description: `${role === 'student' ? 'Student' : 'Teacher'} added successfully`,
+        description: "Student added successfully",
       });
       setOpen(false);
       fetchStudents();
@@ -121,21 +123,21 @@ const StudentsTab = () => {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Manage Users
+              Manage Students
             </CardTitle>
-            <CardDescription>Add students and assign roles</CardDescription>
+            <CardDescription>Add and manage students</CardDescription>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Add User
+                Add Student
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New User</DialogTitle>
-                <DialogDescription>Create a new student or teacher account</DialogDescription>
+                <DialogTitle>Add New Student</DialogTitle>
+                <DialogDescription>Create a new student account</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddStudent} className="space-y-4">
                 <div className="space-y-2">
@@ -150,23 +152,12 @@ const StudentsTab = () => {
                   <Label htmlFor="password">Password</Label>
                   <Input id="password" name="password" type="password" required minLength={6} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select name="role" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <input type="hidden" name="role" value="student" />
                 <div className="flex gap-2 justify-end">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">Add User</Button>
+                  <Button type="submit">Add Student</Button>
                 </div>
               </form>
             </DialogContent>
@@ -178,7 +169,7 @@ const StudentsTab = () => {
           {loading ? (
             <p className="text-center text-muted-foreground">Loading...</p>
           ) : students.length === 0 ? (
-            <p className="text-center text-muted-foreground">No users found</p>
+            <p className="text-center text-muted-foreground">No students found</p>
           ) : (
             students.map((student) => (
               <div key={student.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -194,9 +185,7 @@ const StudentsTab = () => {
                     </p>
                   </div>
                 </div>
-                <Badge variant={student.role === 'teacher' ? 'default' : 'secondary'}>
-                  {student.role || 'No role'}
-                </Badge>
+                <Badge variant="secondary">Student</Badge>
               </div>
             ))
           )}
