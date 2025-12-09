@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, CheckCircle, FileText, Upload, LogOut, BookOpen, BarChart3, Key, Settings } from "lucide-react";
+import { Brain, CheckCircle, FileText, Upload, BookOpen, BarChart3, Sparkles } from "lucide-react";
 import { GeminiService } from "@/services/GeminiService";
 import { ParsedContent } from "@/services/FileParserService";
 import BatchFileUpload from "@/components/BatchFileUpload";
 import BatchEvaluationResults from "@/components/BatchEvaluationResults";
-import ApiKeySetup from "@/components/ApiKeySetup";
 import { useToast } from "@/hooks/use-toast";
 
 interface BatchResult {
@@ -24,14 +23,7 @@ const GradeSanchalaak = () => {
   const [uploadedFiles, setUploadedFiles] = useState<ParsedContent[]>([]);
   const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const apiKey = GeminiService.getApiKey();
-    setHasApiKey(!!apiKey);
-  }, []);
 
   const extractKeywords = async () => {
     if (!assignmentProblem.trim()) {
@@ -114,25 +106,6 @@ const GradeSanchalaak = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handleApiKeySet = () => {
-    setHasApiKey(true);
-    setShowApiKeySetup(false);
-  };
-
-  const handleUpdateApiKey = () => {
-    setShowApiKeySetup(true);
-  };
-
-  const handleLogout = () => {
-    GeminiService.removeApiKey();
-    setHasApiKey(false);
-    resetApp();
-    toast({
-      title: "Logged Out",
-      description: "API key removed successfully.",
-    });
   };
 
   const resetApp = () => {
@@ -271,40 +244,15 @@ const GradeSanchalaak = () => {
     }
   };
 
-  if (!hasApiKey || showApiKeySetup) {
-    return <ApiKeySetup onApiKeySet={handleApiKeySet} />;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <div className="container max-w-7xl mx-auto px-4 py-8">
         {/* Enhanced Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex-1"></div>
+          <div className="flex justify-center items-center mb-6">
             <div className="inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground px-4 py-2 rounded-full shadow-glow">
-              <Brain className="w-5 h-5" />
+              <Sparkles className="w-5 h-5" />
               <span className="font-semibold">AI-Powered Batch Evaluator</span>
-            </div>
-            <div className="flex-1 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleUpdateApiKey}
-                className="gap-2 hover:bg-accent hover:text-accent-foreground border-2 border-primary/20 hover:border-primary transition-all duration-200"
-              >
-                <Key className="w-4 h-4" />
-                Update API Key
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2 text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-all duration-200"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
             </div>
           </div>
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -317,13 +265,13 @@ const GradeSanchalaak = () => {
           </div>
           <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
             Advanced AI assignment evaluator with intelligent keyword extraction and batch processing. 
-            Extract 50 domain-specific keywords from assignment problems, then evaluate up to 100 student solutions with comprehensive scoring.
+            Extract domain-specific keywords from assignment problems, then evaluate student solutions with comprehensive scoring.
           </p>
           <div className="flex justify-center mt-6">
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-success rounded-full"></div>
-                <span>50 Keywords Extraction</span>
+                <span>AI Keyword Extraction</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -394,7 +342,7 @@ const GradeSanchalaak = () => {
                   Assignment Problem Statement
                 </CardTitle>
                 <CardDescription>
-                  Enter or upload the assignment problem to extract 50 relevant keywords for evaluation
+                  Enter or upload the assignment problem to extract relevant keywords for evaluation
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -412,7 +360,7 @@ const GradeSanchalaak = () => {
                   
                   <TabsContent value="text" className="space-y-4">
                     <Textarea
-                      placeholder="Enter the complete assignment problem statement here. The AI will extract 50 domain-specific keywords that will be used to evaluate student solutions..."
+                      placeholder="Enter the complete assignment problem statement here. The AI will extract domain-specific keywords that will be used to evaluate student solutions..."
                       value={assignmentProblem}
                       onChange={(e) => setAssignmentProblem(e.target.value)}
                       className="min-h-[200px] resize-none border-2 focus:border-primary transition-colors"
@@ -432,27 +380,27 @@ const GradeSanchalaak = () => {
                               const parsed = await FileParserService.parseFile(file);
                               setAssignmentProblem(parsed.text);
                             } catch (error) {
-                              console.error('Error parsing file:', error);
+                              toast({
+                                title: "Parse Error",
+                                description: "Failed to parse the uploaded file.",
+                                variant: "destructive",
+                              });
                             }
                           }
                         }}
                         className="hidden"
-                        id="problem-file-input"
+                        id="problem-upload"
                       />
-                      <label htmlFor="problem-file-input" className="cursor-pointer">
-                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          Click to upload assignment problem file
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Supports PDF, Word, and TXT files
-                        </p>
+                      <label htmlFor="problem-upload" className="cursor-pointer">
+                        <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-lg font-medium">Click to upload problem file</p>
+                        <p className="text-sm text-muted-foreground mt-2">Supports PDF, DOC, DOCX, TXT</p>
                       </label>
                     </div>
                     {assignmentProblem && (
-                      <div className="bg-secondary/50 p-3 rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-2">Extracted text preview:</p>
-                        <p className="text-sm truncate">{assignmentProblem.substring(0, 100)}...</p>
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Uploaded content preview:</p>
+                        <p className="mt-2 text-sm line-clamp-3">{assignmentProblem}</p>
                       </div>
                     )}
                   </TabsContent>
@@ -461,44 +409,43 @@ const GradeSanchalaak = () => {
                 <Button
                   onClick={extractKeywords}
                   disabled={isProcessing || !assignmentProblem.trim()}
-                  className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300"
+                  className="w-full"
                   size="lg"
                 >
                   {isProcessing ? (
                     <>
-                      <Brain className="w-4 h-4 mr-2 animate-spin" />
+                      <Brain className="w-5 h-5 mr-2 animate-pulse" />
                       Extracting Keywords...
                     </>
                   ) : (
                     <>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Extract 50 Keywords
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Extract Keywords with AI
                     </>
                   )}
                 </Button>
-
-                {extractedKeywords.length > 0 && (
-                  <Card className="bg-secondary/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Extracted Keywords ({extractedKeywords.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                        {extractedKeywords.map((keyword, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="secondary"
-                            className="bg-primary/10 hover:bg-primary/20 transition-colors"
-                          >
-                            {keyword}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </CardContent>
             </Card>
+
+            {extractedKeywords.length > 0 && (
+              <Card className="shadow-elegant">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    Extracted Keywords ({extractedKeywords.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {extractedKeywords.map((keyword, index) => (
+                      <Badge key={index} variant="secondary" className="px-3 py-1.5">
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-6">
@@ -506,61 +453,50 @@ const GradeSanchalaak = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="w-5 h-5 text-primary" />
-                  Batch Upload Assignment Solutions
+                  Upload Student Solutions
                 </CardTitle>
                 <CardDescription>
-                  Upload up to 100 assignment solutions for evaluation based on extracted keywords
+                  Upload multiple student assignment files for batch evaluation
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <BatchFileUpload 
                   onFilesParsed={setUploadedFiles}
-                  disabled={isProcessing}
                 />
                 
                 {uploadedFiles.length > 0 && (
-                  <Button
-                    onClick={evaluateBatch}
-                    disabled={isProcessing}
-                    className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300"
-                    size="lg"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Brain className="w-4 h-4 mr-2 animate-spin" />
-                        Evaluating {uploadedFiles.length} Assignments...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Evaluate {uploadedFiles.length} Assignments
-                      </>
-                    )}
-                  </Button>
+                  <div className="mt-6">
+                    <Button
+                      onClick={evaluateBatch}
+                      disabled={isProcessing}
+                      className="w-full"
+                      size="lg"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Brain className="w-5 h-5 mr-2 animate-pulse" />
+                          Evaluating {uploadedFiles.length} Assignments...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5 mr-2" />
+                          Evaluate All {uploadedFiles.length} Assignments
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="results">
-            {batchResults.length > 0 ? (
-              <BatchEvaluationResults 
-                results={batchResults}
-                extractedKeywords={extractedKeywords}
-                onExportReport={exportReport}
-                onExportExcel={exportExcelReport}
-              />
-            ) : (
-              <Card className="shadow-elegant">
-                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                  <BarChart3 className="w-12 h-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Results Yet</h3>
-                  <p className="text-muted-foreground">
-                    Complete the previous steps to see batch evaluation results
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+          <TabsContent value="results" className="space-y-6">
+            <BatchEvaluationResults 
+              results={batchResults}
+              extractedKeywords={extractedKeywords}
+              onExportReport={exportReport}
+              onExportExcel={exportExcelReport}
+            />
           </TabsContent>
         </Tabs>
       </div>
