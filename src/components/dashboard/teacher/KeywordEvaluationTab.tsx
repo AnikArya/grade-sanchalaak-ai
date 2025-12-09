@@ -7,8 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { GeminiService } from "@/services/GeminiService";
-import ApiKeySetup from "@/components/ApiKeySetup";
-import { Loader2, PlayCircle, CheckCircle, Settings } from "lucide-react";
+import { Loader2, PlayCircle, CheckCircle, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -40,8 +39,6 @@ interface EvaluationResult {
 
 const KeywordEvaluationTab = () => {
   const { toast } = useToast();
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<string>("");
   const [assignmentProblem, setAssignmentProblem] = useState("");
@@ -53,11 +50,7 @@ const KeywordEvaluationTab = () => {
   const [currentEvaluating, setCurrentEvaluating] = useState<string>("");
 
   useEffect(() => {
-    const apiKey = GeminiService.getApiKey();
-    setHasApiKey(!!apiKey);
-    if (apiKey) {
-      fetchAssignments();
-    }
+    fetchAssignments();
   }, []);
 
   const fetchAssignments = async () => {
@@ -161,8 +154,6 @@ const KeywordEvaluationTab = () => {
       setCurrentEvaluating(studentName);
       
       // Extract the file path from the full URL
-      // file_url format: https://...supabase.co/storage/v1/object/public/submissions/path/to/file.pdf
-      // We need just: path/to/file.pdf
       const urlParts = submission.file_url.split('/submissions/');
       const filePath = urlParts.length > 1 ? urlParts[1] : submission.file_url;
       
@@ -277,29 +268,18 @@ const KeywordEvaluationTab = () => {
     }
   };
 
-  const handleApiKeySet = () => {
-    setHasApiKey(true);
-    setShowApiKeySetup(false);
-    fetchAssignments();
-  };
-
-  if (!hasApiKey || showApiKeySetup) {
-    return <ApiKeySetup onApiKeySet={handleApiKeySet} />;
-  }
-
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Keyword-Based Evaluation</CardTitle>
-              <CardDescription>Evaluate assignments using AI-extracted keywords</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                AI-Powered Keyword Evaluation
+              </CardTitle>
+              <CardDescription>Evaluate assignments using AI-extracted keywords - no API key required</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setShowApiKeySetup(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              API Settings
-            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -322,57 +302,60 @@ const KeywordEvaluationTab = () => {
 
           {selectedAssignment && (
             <>
-          {/* Assignment Problem/Description */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Assignment Problem/Description</Label>
-            <Textarea
-              value={assignmentProblem}
-              onChange={(e) => setAssignmentProblem(e.target.value)}
-              placeholder="Enter or edit the assignment problem description..."
-              rows={8}
-              className="resize-none bg-background border-2 border-border focus:border-primary transition-colors"
-            />
-          </div>
+              {/* Assignment Problem/Description */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Assignment Problem/Description</Label>
+                <Textarea
+                  value={assignmentProblem}
+                  onChange={(e) => setAssignmentProblem(e.target.value)}
+                  placeholder="Enter or edit the assignment problem description..."
+                  rows={8}
+                  className="resize-none bg-background border-2 border-border focus:border-primary transition-colors"
+                />
+              </div>
 
-          {/* Extract Keywords Button */}
-          <Button
-            onClick={handleExtractKeywords}
-            disabled={isExtractingKeywords || !assignmentProblem.trim()}
-            className="w-full"
-            size="lg"
-          >
-            {isExtractingKeywords ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Extracting Keywords...
-              </>
-            ) : (
-              "Extract Keywords from Description"
-            )}
-          </Button>
+              {/* Extract Keywords Button */}
+              <Button
+                onClick={handleExtractKeywords}
+                disabled={isExtractingKeywords || !assignmentProblem.trim()}
+                className="w-full"
+                size="lg"
+              >
+                {isExtractingKeywords ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Extracting Keywords...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Extract Keywords from Description
+                  </>
+                )}
+              </Button>
 
-          {/* Display Keywords */}
-          {keywords.length > 0 && (
-            <Card className="bg-muted/50 border-2">
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-lg">Extracted Keywords</p>
-                    <Badge variant="outline" className="text-base px-3 py-1">
-                      {keywords.length} keywords
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {keywords.map((keyword, idx) => (
-                      <Badge key={idx} variant="secondary" className="px-3 py-1.5 text-sm">
-                        {keyword}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              {/* Display Keywords */}
+              {keywords.length > 0 && (
+                <Card className="bg-muted/50 border-2">
+                  <CardContent className="pt-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-lg">Extracted Keywords</p>
+                        <Badge variant="outline" className="text-base px-3 py-1">
+                          {keywords.length} keywords
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {keywords.map((keyword, idx) => (
+                          <Badge key={idx} variant="secondary" className="px-3 py-1.5 text-sm">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Submissions & Evaluation */}
               {submissions.length > 0 && keywords.length > 0 && (
@@ -415,91 +398,101 @@ const KeywordEvaluationTab = () => {
                       );
 
                       return (
-                      <Card
-                        key={submission.id}
-                        className="hover:shadow-md transition-shadow"
-                      >
-                        <CardContent className="pt-6">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <p className="font-semibold text-lg">{submission.profiles?.full_name || "Unknown Student"}</p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {submission.profiles?.email || "No email"}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                                <span className="font-medium">File:</span> {submission.file_name}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {evalResult ? (
-                                evalResult.success ? (
-                                  <div className="flex items-center gap-3">
-                                    <Badge variant="default" className="text-base px-4 py-2">
-                                      {evalResult.result.total_score}/50
-                                    </Badge>
-                                    <CheckCircle className="h-6 w-6 text-green-500" />
-                                  </div>
-                                ) : (
-                                  <Badge variant="destructive" className="px-4 py-2">Failed</Badge>
-                                )
-                              ) : (
-                                <Button
-                                  size="default"
-                                  onClick={() => handleEvaluateIndividual(submission)}
-                                  disabled={isEvaluating}
-                                >
-                                  Evaluate
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-
-                          {evalResult && evalResult.success && (
-                            <div className="mt-4 pt-4 border-t space-y-3">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-muted/50 p-3 rounded-lg">
-                                  <p className="text-xs text-muted-foreground mb-1">Keyword Coverage</p>
-                                  <p className="text-lg font-semibold">
-                                    {evalResult.result.keyword_coverage}/20
-                                  </p>
-                                </div>
-                                <div className="bg-muted/50 p-3 rounded-lg">
-                                  <p className="text-xs text-muted-foreground mb-1">Keywords Matched</p>
-                                  <p className="text-lg font-semibold">
-                                    {evalResult.result.matched_keywords?.length || 0}/{keywords.length}
-                                  </p>
-                                </div>
-                              </div>
-                              {evalResult.result.rubric && (
-                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                  <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Content Quality:</span>
-                                    <span className="font-medium">{evalResult.result.rubric.content_quality}/10</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Completeness:</span>
-                                    <span className="font-medium">{evalResult.result.rubric.completeness}/10</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Clarity:</span>
-                                    <span className="font-medium">{evalResult.result.rubric.clarity_language}/5</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Originality:</span>
-                                    <span className="font-medium">{evalResult.result.rubric.originality}/5</span>
-                                  </div>
-                                </div>
-                              )}
-                              <div className="space-y-2 bg-muted/30 p-3 rounded-lg">
-                                <p className="font-semibold text-sm">Feedback</p>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {evalResult.result.feedback}
+                        <Card
+                          key={submission.id}
+                          className="hover:shadow-md transition-shadow"
+                        >
+                          <CardContent className="pt-6">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-semibold text-lg">{submission.profiles?.full_name || "Unknown Student"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {submission.profiles?.email || "No email"}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                                  <span className="font-medium">File:</span> {submission.file_name}
                                 </p>
                               </div>
+                              <div className="flex items-center gap-2">
+                                {evalResult ? (
+                                  evalResult.success ? (
+                                    <div className="flex items-center gap-3">
+                                      <Badge variant="default" className="text-base px-4 py-2">
+                                        {evalResult.result.total_score}/50
+                                      </Badge>
+                                      <CheckCircle className="h-6 w-6 text-green-500" />
+                                    </div>
+                                  ) : (
+                                    <Badge variant="destructive" className="px-4 py-2">Failed</Badge>
+                                  )
+                                ) : (
+                                  <Button
+                                    size="default"
+                                    onClick={() => handleEvaluateIndividual(submission)}
+                                    disabled={isEvaluating}
+                                  >
+                                    Evaluate
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
+
+                            {evalResult && evalResult.success && (
+                              <div className="mt-4 pt-4 border-t space-y-3">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="bg-muted/50 p-3 rounded-lg">
+                                    <p className="text-xs text-muted-foreground mb-1">Keyword Coverage</p>
+                                    <p className="text-lg font-semibold">
+                                      {evalResult.result.keyword_coverage}%
+                                    </p>
+                                  </div>
+                                  <div className="bg-muted/50 p-3 rounded-lg">
+                                    <p className="text-xs text-muted-foreground mb-1">Keywords Matched</p>
+                                    <p className="text-lg font-semibold">
+                                      {evalResult.result.matched_keywords?.length || 0}/{keywords.length}
+                                    </p>
+                                  </div>
+                                </div>
+                                {evalResult.result.rubric && (
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Content Quality:</span>
+                                      <span className="font-medium">{evalResult.result.rubric.content_quality}/10</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Completeness:</span>
+                                      <span className="font-medium">{evalResult.result.rubric.completeness}/10</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Clarity:</span>
+                                      <span className="font-medium">{evalResult.result.rubric.clarity_language}/5</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Originality:</span>
+                                      <span className="font-medium">{evalResult.result.rubric.originality}/5</span>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="bg-primary/5 p-3 rounded-lg">
+                                  <p className="text-xs text-muted-foreground mb-1">Feedback</p>
+                                  <p className="text-sm">{evalResult.result.feedback}</p>
+                                </div>
+                                {evalResult.result.matched_keywords?.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-2">Matched Keywords</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {evalResult.result.matched_keywords.map((kw: string, idx: number) => (
+                                        <Badge key={idx} variant="outline" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                                          {kw}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
                       );
                     })}
                   </div>

@@ -1,1 +1,7 @@
 project_id = "tioeneawxjboojdgxfme"
+
+[functions.create-user]
+verify_jwt = true
+
+[functions.ai-evaluate]
+verify_jwt = false
