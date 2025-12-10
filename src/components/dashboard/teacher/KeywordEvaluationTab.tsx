@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { GeminiService } from "@/services/GeminiService";
-import { Loader2, PlayCircle, CheckCircle, Sparkles } from "lucide-react";
+import { Loader2, PlayCircle, CheckCircle, Sparkles, File } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -15,6 +15,7 @@ interface Assignment {
   id: string;
   title: string;
   description: string;
+  description_file_url?: string;
   total_marks: number;
 }
 
@@ -113,11 +114,15 @@ const KeywordEvaluationTab = () => {
     const assignment = assignments.find(a => a.id === assignmentId);
     if (assignment?.description) {
       setAssignmentProblem(assignment.description);
+    } else {
+      setAssignmentProblem("");
     }
     
     const subs = await fetchSubmissions(assignmentId);
     setSubmissions(subs);
   };
+
+  const getSelectedAssignment = () => assignments.find(a => a.id === selectedAssignment);
 
   const handleExtractKeywords = async () => {
     if (!assignmentProblem.trim()) {
@@ -304,14 +309,32 @@ const KeywordEvaluationTab = () => {
             <>
               {/* Assignment Problem/Description */}
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Assignment Problem/Description</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">Assignment Problem/Description</Label>
+                  {getSelectedAssignment()?.description_file_url && (
+                    <a
+                      href={getSelectedAssignment()?.description_file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    >
+                      <File className="h-4 w-4" />
+                      View PDF Description
+                    </a>
+                  )}
+                </div>
                 <Textarea
                   value={assignmentProblem}
                   onChange={(e) => setAssignmentProblem(e.target.value)}
-                  placeholder="Enter or edit the assignment problem description..."
+                  placeholder="Enter or edit the assignment problem description. If a PDF was uploaded, copy the relevant content here for keyword extraction..."
                   rows={8}
                   className="resize-none bg-background border-2 border-border focus:border-primary transition-colors"
                 />
+                {getSelectedAssignment()?.description_file_url && !assignmentProblem.trim() && (
+                  <p className="text-sm text-muted-foreground">
+                    A PDF description is attached. Please copy the text content from the PDF above into the text area for keyword extraction.
+                  </p>
+                )}
               </div>
 
               {/* Extract Keywords Button */}
