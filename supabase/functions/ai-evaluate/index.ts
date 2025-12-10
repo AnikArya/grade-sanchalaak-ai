@@ -49,24 +49,34 @@ Return ONLY a valid JSON array of 30-40 keywords (no more, no less):
 
       userPrompt = `Extract keywords from this assignment problem:\n\n${assignmentProblem}`;
     } else if (action === 'evaluateAssignment') {
-      systemPrompt = `You are an expert academic assignment evaluator. Evaluate student assignments based on keyword coverage and content quality.
+      systemPrompt = `You are an expert academic assignment evaluator. Your PRIMARY task is to find keywords in student submissions using FLEXIBLE MATCHING.
+
+KEYWORD MATCHING RULES (VERY IMPORTANT):
+- Match keywords using SEMANTIC similarity, not just exact text match
+- A keyword is "matched" if the student discusses the CONCEPT, even with different wording
+- Consider synonyms, related terms, abbreviations, and variations as matches
+- Example: "ML" matches "machine learning", "AI" matches "artificial intelligence"
+- Example: "database" matches "DB", "databases", "data storage", "data management"
+- Example: "algorithm" matches "algorithmic approach", "algo", "computational method"
+- Be GENEROUS with matching - if the concept is clearly discussed, count it as matched
+- Look for the keyword's meaning/concept in the text, not just the exact word
 
 EVALUATION CRITERIA:
-1. Keyword Coverage (40% weight): Check how many reference keywords appear in the submission
-2. Content Quality (30% weight): Assess depth, accuracy, and clarity of explanations
-3. Structure & Organization (15% weight): Evaluate logical flow and presentation
-4. Critical Thinking (15% weight): Look for analysis, synthesis, and original insights
+1. Keyword Coverage (40%): How many reference keyword CONCEPTS are covered (use flexible matching)
+2. Content Quality (30%): Depth, accuracy, clarity of explanations
+3. Structure & Organization (15%): Logical flow and presentation
+4. Critical Thinking (15%): Analysis, synthesis, original insights
 
-SCORING GUIDELINES:
-- Excellent (90-100%): Comprehensive coverage, deep understanding, well-structured
-- Good (70-89%): Good coverage, solid understanding, minor gaps
-- Satisfactory (50-69%): Adequate coverage, basic understanding, some issues
-- Needs Improvement (30-49%): Limited coverage, superficial understanding
-- Poor (0-29%): Minimal coverage, fundamental misunderstandings
+SCORING:
+- 90-100%: Excellent - comprehensive coverage, deep understanding
+- 70-89%: Good - solid coverage with minor gaps
+- 50-69%: Satisfactory - adequate coverage, basic understanding
+- 30-49%: Needs Improvement - limited coverage
+- 0-29%: Poor - minimal coverage
 
-IMPORTANT: Be fair but rigorous. Provide constructive feedback.
+CRITICAL: Be generous with keyword matching. Students may use different terminology to express the same concepts. If the core idea of a keyword is present, mark it as matched.
 
-Return your evaluation as a valid JSON object with this exact structure:
+Return ONLY a valid JSON object:
 {
   "keyword_coverage": <number 0-100>,
   "matched_keywords": ["keyword1", "keyword2", ...],
@@ -77,17 +87,20 @@ Return your evaluation as a valid JSON object with this exact structure:
     "critical_thinking": <number 0-100>
   },
   "overall_score": <number 0-100>,
-  "feedback": "<constructive feedback string>",
-  "strengths": ["strength1", "strength2", ...],
-  "areas_for_improvement": ["area1", "area2", ...]
+  "feedback": "<constructive feedback>",
+  "strengths": ["strength1", ...],
+  "areas_for_improvement": ["area1", ...]
 }`;
 
-      userPrompt = `Reference Keywords: ${JSON.stringify(referenceKeywords)}
+      userPrompt = `REFERENCE KEYWORDS TO FIND (use flexible/semantic matching):
+${JSON.stringify(referenceKeywords)}
 
-Student Submission:
+STUDENT SUBMISSION TEXT:
+"""
 ${assignmentText}
+"""
 
-Evaluate this submission against the reference keywords and provide your assessment.`;
+TASK: Carefully read the submission and identify which keyword CONCEPTS are discussed, even if different words are used. Be generous - if a concept is clearly covered, mark that keyword as matched.`;
     } else {
       throw new Error('Invalid action. Use "extractKeywords" or "evaluateAssignment"');
     }
