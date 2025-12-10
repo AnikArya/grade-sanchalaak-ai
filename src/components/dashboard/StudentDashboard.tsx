@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Upload, LogOut, FileText, Award } from "lucide-react";
+import { Upload, LogOut, FileText, Award, File } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SubmissionUpload from "./SubmissionUpload";
 
@@ -12,6 +12,7 @@ interface Assignment {
   id: string;
   title: string;
   description: string;
+  description_file_url?: string;
   due_date: string;
   total_marks: number;
 }
@@ -184,6 +185,17 @@ const StudentDashboard = ({ userId }: StudentDashboardProps) => {
                       <div>
                         <h3 className="font-semibold text-lg">{assignment.title}</h3>
                         <p className="text-sm text-muted-foreground">{assignment.description}</p>
+                        {assignment.description_file_url && (
+                          <a
+                            href={assignment.description_file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-1"
+                          >
+                            <File className="h-4 w-4" />
+                            View Assignment PDF
+                          </a>
+                        )}
                         {assignment.due_date && (
                           <p className="text-sm text-muted-foreground mt-1">
                             Due: {new Date(assignment.due_date).toLocaleDateString()}
