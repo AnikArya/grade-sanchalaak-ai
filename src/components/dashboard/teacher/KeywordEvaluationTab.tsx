@@ -4,10 +4,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { GeminiService } from "@/services/GeminiService";
-import { Loader2, PlayCircle, CheckCircle, Sparkles, File } from "lucide-react";
+import { FileParserService } from "@/services/FileParserService";
+import { Loader2, PlayCircle, CheckCircle, Sparkles, File as FileIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -46,6 +46,7 @@ const KeywordEvaluationTab = () => {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isExtractingKeywords, setIsExtractingKeywords] = useState(false);
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResults, setEvaluationResults] = useState<EvaluationResult[]>([]);
   const [currentEvaluating, setCurrentEvaluating] = useState<string>("");
@@ -110,12 +111,39 @@ const KeywordEvaluationTab = () => {
     setSelectedAssignment(assignmentId);
     setKeywords([]);
     setEvaluationResults([]);
+    setAssignmentProblem("");
     
     const assignment = assignments.find(a => a.id === assignmentId);
-    if (assignment?.description) {
+    
+    // If there's a PDF, extract text from it automatically
+    if (assignment?.description_file_url) {
+      setIsLoadingPdf(true);
+      try {
+        const response = await fetch(assignment.description_file_url);
+        const blob = await response.blob();
+        const file = new File([blob], "assignment.pdf", { type: "application/pdf" });
+        const parsed = await FileParserService.parseFile(file);
+        setAssignmentProblem(parsed.text);
+        toast({
+          title: "PDF Loaded",
+          description: "Assignment description extracted from PDF successfully",
+        });
+      } catch (error) {
+        console.error("Failed to parse PDF:", error);
+        toast({
+          title: "PDF Load Failed",
+          description: "Could not extract text from PDF. Using text description if available.",
+          variant: "destructive",
+        });
+        // Fall back to text description
+        if (assignment?.description) {
+          setAssignmentProblem(assignment.description);
+        }
+      } finally {
+        setIsLoadingPdf(false);
+      }
+    } else if (assignment?.description) {
       setAssignmentProblem(assignment.description);
-    } else {
-      setAssignmentProblem("");
     }
     
     const subs = await fetchSubmissions(assignmentId);
@@ -307,7 +335,7 @@ const KeywordEvaluationTab = () => {
 
           {selectedAssignment && (
             <>
-              {/* Assignment Problem/Description */}
+              {/* Assignment Problem/Description - Read Only Display */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Assignment Problem/Description</Label>
@@ -318,29 +346,29 @@ const KeywordEvaluationTab = () => {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                     >
-                      <File className="h-4 w-4" />
-                      View PDF Description
+                      <FileIcon className="h-4 w-4" />
+                      View PDF
                     </a>
                   )}
                 </div>
-                <Textarea
-                  value={assignmentProblem}
-                  onChange={(e) => setAssignmentProblem(e.target.value)}
-                  placeholder="Enter or edit the assignment problem description. If a PDF was uploaded, copy the relevant content here for keyword extraction..."
-                  rows={8}
-                  className="resize-none bg-background border-2 border-border focus:border-primary transition-colors"
-                />
-                {getSelectedAssignment()?.description_file_url && !assignmentProblem.trim() && (
-                  <p className="text-sm text-muted-foreground">
-                    A PDF description is attached. Please copy the text content from the PDF above into the text area for keyword extraction.
-                  </p>
+                {isLoadingPdf ? (
+                  <div className="flex items-center justify-center p-8 border rounded-lg bg-muted/30">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    <span>Extracting text from PDF...</span>
+                  </div>
+                ) : (
+                  <div className="p-4 border rounded-lg bg-muted/30 max-h-64 overflow-y-auto">
+                    <p className="whitespace-pre-wrap text-sm">
+                      {assignmentProblem || "No description available"}
+                    </p>
+                  </div>
                 )}
               </div>
 
               {/* Extract Keywords Button */}
               <Button
                 onClick={handleExtractKeywords}
-                disabled={isExtractingKeywords || !assignmentProblem.trim()}
+                disabled={isExtractingKeywords || isLoadingPdf || !assignmentProblem.trim()}
                 className="w-full"
                 size="lg"
               >
