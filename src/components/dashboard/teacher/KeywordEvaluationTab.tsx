@@ -197,8 +197,15 @@ const KeywordEvaluationTab = () => {
 
       if (fileError) throw new Error("Failed to download submission file");
 
-      const text = await fileData.text();
-      const result = await GeminiService.evaluateAssignment(text, keywords);
+      // Use FileParserService to properly parse the file (handles PDFs, DOCX, etc.)
+      const file = new File([fileData], submission.file_name, { type: fileData.type });
+      const parsedContent = await FileParserService.parseFile(file);
+      
+      if (!parsedContent.text || parsedContent.text.trim().length === 0) {
+        throw new Error("Could not extract text from the submission file");
+      }
+      
+      const result = await GeminiService.evaluateAssignment(parsedContent.text, keywords);
 
       // Store evaluation in database
       const { error: insertError } = await supabase.from("evaluations").insert({
