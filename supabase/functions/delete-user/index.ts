@@ -62,14 +62,34 @@ serve(async (req) => {
       throw new Error('User ID is required');
     }
 
-    // Delete user from auth.users (this will cascade to profiles via trigger)
+    // First delete from user_roles table
+    const { error: rolesError } = await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
+    if (rolesError) {
+      console.error('Error deleting user roles:', rolesError);
+    }
+
+    // Delete from profiles table
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('Error deleting profile:', profileError);
+    }
+
+    // Delete user from auth.users
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
       throw deleteError;
     }
 
-    console.log(`User ${userId} deleted successfully`);
+    console.log(`User ${userId} fully deleted from all tables`);
 
     return new Response(
       JSON.stringify({ success: true }),
