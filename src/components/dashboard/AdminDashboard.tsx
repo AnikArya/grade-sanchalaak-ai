@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut } from "lucide-react";
+import { LogOut, ArrowLeft } from "lucide-react";
 import UsersManagementTab from "./admin/UsersManagementTab";
 import SystemOverviewTab from "./admin/SystemOverviewTab";
 import AssignmentsManagementTab from "./admin/AssignmentsManagementTab";
@@ -24,9 +24,14 @@ const AdminDashboard = ({ userId }: AdminDashboardProps) => {
     <div className="min-h-screen bg-gradient-to-br from-destructive/5 via-background to-primary/5">
       <header className="border-b bg-card/50 backdrop-blur">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-destructive to-primary bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-destructive to-primary bg-clip-text text-transparent">
+              Admin Dashboard
+            </h1>
+          </div>
           <Button variant="outline" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             Logout
