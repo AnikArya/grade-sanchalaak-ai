@@ -59,6 +59,12 @@ serve(async (req) => {
     // Get user details from request
     const { email, password, fullName, role } = await req.json();
 
+    // Teachers cannot create admin users
+    if (roleData?.role === 'teacher' && role === 'admin') {
+      throw new Error('Teachers cannot create admin users');
+    }
+
+
     // Create user using admin client
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
