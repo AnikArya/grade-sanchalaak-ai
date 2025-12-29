@@ -137,7 +137,36 @@ const UsersManagementTab = () => {
     }
   };
 
-  const handleChangeRole = async (userId: string, newRole: string) => {
+  const handleChangeRole = async (userId: string, newRole: string, currentRole: string) => {
+    // Prevent changing admin role - only admins can modify admins
+    if (currentRole === "admin") {
+      toast({
+        title: "Error",
+        description: "Only admins can modify other admin accounts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prevent non-admins from assigning admin role (this is a client-side check, server should also enforce)
+    if (newRole === "admin") {
+      // Check if current user is admin
+      const { data: currentUserRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (currentUserRole?.role !== "admin") {
+        toast({
+          title: "Error",
+          description: "Only admins can assign admin role",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       // Delete existing role
       await supabase.from("user_roles").delete().eq("user_id", userId);
@@ -288,8 +317,9 @@ const UsersManagementTab = () => {
                     </TableCell>
                     <TableCell>
                       <Select
-                        onValueChange={(value) => handleChangeRole(user.id, value)}
+                        onValueChange={(value) => handleChangeRole(user.id, value, user.role || "")}
                         defaultValue={user.role}
+                        disabled={user.role === "admin"}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />

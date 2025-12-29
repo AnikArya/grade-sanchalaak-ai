@@ -23,41 +23,12 @@ serve(async (req) => {
     let userPrompt = '';
 
     if (action === 'extractKeywords') {
-      systemPrompt = `You are an expert educator. Extract EXACTLY 50 highly relevant and specific keywords from the assignment questions provided. 
-Focus on:
-- Technical terms and concepts
-- Domain-specific vocabulary
-- Tools, methodologies, and frameworks
-- Key theories and principles
-- Important processes and procedures
-
-Avoid generic words like "the", "and", "important", "good", etc.
-Return ONLY a JSON array with exactly 50 keywords: ["keyword1", "keyword2", ...]`;
-      userPrompt = `Assignment Questions:\n${assignmentProblem}`;
+      systemPrompt = `Extract EXACTLY 50 technical keywords from the assignment. Focus on domain-specific terms, concepts, tools, methodologies. No generic words. Return ONLY JSON array: ["keyword1", "keyword2", ...]`;
+      userPrompt = assignmentProblem;
     } else if (action === 'evaluateAssignment') {
-      systemPrompt = `You are an expert assignment evaluator. Evaluate the student submission against the reference keywords using semantic matching (not just exact matches - understand context and meaning).
-
-Provide detailed, constructive, and actionable feedback that:
-1. Acknowledges what the student did well
-2. Identifies specific areas where the submission could be improved
-3. Gives concrete suggestions for improvement
-4. Is encouraging yet honest
-
-Return JSON with this exact structure:
-{
-  "keyword_coverage": (0-100 percentage of concepts covered),
-  "matched_keywords": ["list of keywords/concepts found in submission"],
-  "missing_keywords": ["list of important keywords/concepts not addressed"],
-  "rubric_scores": {
-    "content_depth": (0-100 - how thoroughly concepts are explained),
-    "completeness": (0-100 - how many required topics are covered)
-  },
-  "overall_score": (0-100 weighted average),
-  "feedback": "A detailed 3-5 sentence feedback paragraph that is specific to this submission, mentioning what was done well and what needs improvement",
-  "strengths": ["3-5 specific things the student did well"],
-  "areas_for_improvement": ["3-5 specific actionable suggestions for improvement"]
-}`;
-      userPrompt = `Reference Keywords to evaluate against:\n${JSON.stringify(referenceKeywords)}\n\nStudent Submission:\n${assignmentText}`;
+      systemPrompt = `Match keywords in submission. Grade out of 50 (1 point per keyword found). Use semantic matching.
+Return JSON: {"matched_keywords":[],"missing_keywords":[],"score":0,"feedback":"brief feedback"}`;
+      userPrompt = `Keywords: ${JSON.stringify(referenceKeywords)}\nSubmission: ${assignmentText}`;
     } else {
       throw new Error('Invalid action');
     }
