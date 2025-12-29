@@ -76,26 +76,21 @@ export class GeminiService {
         throw new Error('No evaluation result received');
       }
 
-      // Map the response to match expected format
+      // Map the response to match expected format - simplified for 50-keyword scoring
+      const matchedKeywords = result.matched_keywords || [];
+      const missingKeywords = result.missing_keywords || [];
+      const totalKeywords = matchedKeywords.length + missingKeywords.length;
+      const keywordCoverage = totalKeywords > 0 ? Math.round((matchedKeywords.length / totalKeywords) * 100) : 0;
+      
       return {
-        keyword_coverage: result.keyword_coverage || 0,
-        matched_keywords: result.matched_keywords || [],
-        missing_keywords: result.missing_keywords || [],
-        rubric: result.rubric_scores ? {
-          content_quality: Math.round((result.rubric_scores.content_quality / 100) * 10),
-          completeness: Math.round((result.rubric_scores.structure_organization / 100) * 10),
-          clarity_language: 5,
-          originality: Math.round((result.rubric_scores.critical_thinking / 100) * 5),
-        } : {
-          content_quality: 0,
-          completeness: 0,
-          clarity_language: 0,
-          originality: 0,
-        },
-        total_score: Math.round((result.overall_score / 100) * 50),
+        keyword_coverage: keywordCoverage,
+        matched_keywords: matchedKeywords,
+        missing_keywords: missingKeywords,
+        rubric: null, // Simplified evaluation doesn't use rubric
+        total_score: result.score || matchedKeywords.length, // Use score directly (out of 50)
         feedback: result.feedback || '',
-        strengths: result.strengths || [],
-        areas_for_improvement: result.areas_for_improvement || [],
+        strengths: [],
+        areas_for_improvement: [],
       };
     } catch (error) {
       console.error('Error evaluating assignment:', error);
