@@ -43,6 +43,7 @@ serve(async (req) => {
     // Verify the requesting user is a teacher or admin
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
+      console.error('Auth error:', userError);
       throw new Error('Unauthorized');
     }
 
@@ -53,46 +54,54 @@ serve(async (req) => {
       .single();
 
     if (roleError || (roleData?.role !== 'teacher' && roleData?.role !== 'admin')) {
+      console.error('Role error:', roleError, 'Role:', roleData?.role);
       throw new Error('Only teachers and admins can delete users');
     }
 
     const { userId } = await req.json();
+    console.log('Attempting to delete user:', userId);
 
     if (!userId) {
       throw new Error('User ID is required');
     }
 
-    // First delete from user_roles table
+    // CRITICAL: Delete from auth.users FIRST using admin client
+    // This is the most important step - if this fails, user can still login
+    console.log('Deleting user from auth.users...');
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+    if (deleteAuthError) {
+      console.error('Error deleting from auth.users:', deleteAuthError);
+      throw new Error(`Failed to delete user from auth: ${deleteAuthError.message}`);
+    }
+    console.log('Successfully deleted from auth.users');
+
+    // Now clean up related tables (these may already be cascade deleted or may fail if RLS blocks)
+    // Using admin client to bypass RLS
+    console.log('Cleaning up user_roles...');
     const { error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .delete()
       .eq('user_id', userId);
 
     if (rolesError) {
-      console.error('Error deleting user roles:', rolesError);
+      console.error('Error deleting user roles (non-critical):', rolesError);
     }
 
-    // Delete from profiles table
+    console.log('Cleaning up profiles...');
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('id', userId);
 
     if (profileError) {
-      console.error('Error deleting profile:', profileError);
-    }
-
-    // Delete user from auth.users
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-    if (deleteError) {
-      throw deleteError;
+      console.error('Error deleting profile (non-critical):', profileError);
     }
 
     console.log(`User ${userId} fully deleted from all tables`);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, message: 'User completely deleted' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
